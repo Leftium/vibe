@@ -1,32 +1,35 @@
 # What Vibe Can Learn From Cloudflare OS
 
 **Date:** 2026-08-06  
-**Status:** Research note  
-**Cloudflare OS revision reviewed:** `aedcda8b3066ff666f57ae28ecef7341d6c2dee7`  
+**Status:** Research note - reassessed against current main  
+**Cloudflare OS baseline revision reviewed:** `aedcda8b3066ff666f57ae28ecef7341d6c2dee7`  
+**Reassessed:** 2026-09-29  
+**Cloudflare OS current-main revision reviewed:** `687aab049cf084030a42093c10c4dde3d9c33fb4`  
 **Cloudflare OS starter revision reviewed:** `9c18a2e8b0c3741e5f4813546bbf24be5bbb98ee`  
 **Related:** [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md), [Vibe on Cloudflare OS](./2026-08-06-vibe-on-cloudflare-os.md), [Vibe Reusable Modules and Upgrades](./2026-08-06-vibe-reusable-modules-and-upgrades.md)
 
+
 ## One Sentence
 
-Cloudflare OS demonstrates several mechanisms Vibe should adopt or adapt, especially typed capabilities shared by apps and agents, resource brokers, isolated app instances, draft-to-mainline editing, provenance-aware sharing, and blueprint distribution, without requiring Vibe to inherit Cloudflare's hosted runtime or source model.
+Cloudflare OS has converged substantially toward Vibe's source and workspace architecture: accepted Gadget source is now real Git, live proposal editing is an OT layer over commits, workspaces can contain multiple typed workpieces, and external Git trees can be mounted as editable Worktrees. Vibe should reuse those execution and authoring primitives where practical while keeping its own malleability semantics - Resources, Tools, Compositions, Recipes, modules, and capability contracts - above the provider boundary.
+
 
 ## First-Screen Contract
 
-This document is a source-backed analysis of Cloudflare OS as a reference architecture for Vibe.
+This document is a source-backed analysis of Cloudflare OS as a reference architecture for Vibe. The original August 2026 research was pinned to `aedcda8`; the September reassessment compares that baseline with current `main` at `687aab049cf084030a42093c10c4dde3d9c33fb4`.
 
-The current Vibe foundation defines an independent, local-first-capable system with readable files, Git history, an optional Builder, a stable shell, typed actors, configuration-first customization, and last-good artifacts. No Vibe implementation exists yet.
+The reassessment changes two earlier conclusions. Cloudflare OS is no longer fundamentally "one workspace = one Gadget", and its accepted source history is no longer Yjs-based. Current Cloudflare OS has:
 
-Cloudflare OS is an existing open-source system for agent workspaces and modifiable personal apps. It already implements many adjacent mechanisms, but with a different center of gravity: a hosted Workshop, Cloudflare Workers, Durable Objects, Yjs-managed source, and Gadgets that run inside the Workshop.
+- A workspace containing multiple **workpieces**, including executable Gadgets and Git-backed Worktrees.
+- Real Git objects and commits as accepted Gadget source history.
+- CodeMirror operational transforms for live, unaccepted edits; live-sync machinery is no longer the durable source identity.
+- Chat-scoped proposals that behave increasingly like branches over an accepted Git head.
+- Worktrees that let agents and users inspect and edit arbitrary Git-backed source through the same workpiece editing model.
+- Gatekeepers with increasingly explicit observation, restricted-data, approval, and credential-boundary semantics.
 
-The target outcome of this note is not a substrate decision. It is a precise list of:
+These changes remove two of the largest substrate mismatches identified in August. They do not remove Vibe's need for a provider-neutral product model. Cloudflare Workpieces are execution/authoring containers; they are not the semantic Resource/Tool/Composition layer suggested by Vibe's malleability goals.
 
-- Mechanisms Vibe should adopt
-- Mechanisms Vibe should adapt to its own contracts
-- Mechanisms worth testing
-- Cloudflare-specific assumptions Vibe should reject
-- Changes that may be needed in the Vibe foundation
-
-This research is complete when each material recommendation points to an upstream source and states whether it changes Vibe's product contract, implementation, or roadmap.
+The target outcome remains a precise list of mechanisms Vibe should adopt, adapt, or keep behind an adapter. Current upstream behavior wins over the August baseline where the two conflict.
 
 ## Scope
 
@@ -93,6 +96,77 @@ Cloudflare OS describes itself using an operating-system analogy. Translated int
 | Starter deployment | Branding, configuration, integrations and pinned core | Vibe installation profile |
 
 This mapping is close enough to reuse architectural thinking, but not exact enough to substitute names mechanically.
+
+
+## September 2026 Reassessment
+
+Between the August baseline and the current revision, Cloudflare OS moved materially toward a general agent workspace rather than a single generated-app container.
+
+### Multi-workpiece workspaces
+
+Cloudflare OS generalized Gadget identity into a shared `WorkpieceId` namespace. A workspace may contain multiple Gadgets, and chat is workspace-scoped so one task can create or modify several workpieces together. The design intentionally leaves room for workpiece kinds beyond Gadgets. Current code also exposes Worktrees as a second editable workpiece kind.
+
+For Vibe, this changes the mapping from `Vibe app ~= Gadget` to a layered placement model:
+
+```text
+Vibe composition / installation
+  -> Cloudflare workspace
+      -> Gadget workpiece(s) for executable placement
+      -> Worktree workpiece(s) for Git-backed editable source
+      -> Gatekeeper capabilities
+```
+
+A Vibe Tool does not automatically deserve its own Gadget. Vibe should co-locate by default and introduce stronger workpiece boundaries only when authority, state ownership, lifecycle, failure isolation, scaling, or reuse justify them.
+
+### Git is now accepted source identity
+
+Cloudflare OS moved committed Gadget code into a real Git object store. Each accepted Gadget points at a commit. Chats carry proposed changes over a known commit base; stale proposals update from mainline with a three-way merge before acceptance. The design explicitly treats the chat as the branch and mainline advancement as ordinary Git history.
+
+The implementation then removed Yjs from the active editing path in favor of CodeMirror `ChangeSet` operational transforms. This makes the durable/transient distinction much cleaner:
+
+```text
+Git commit
+  -> accepted source identity and history
+
+OT changes
+  -> transient collaborative proposal state
+```
+
+Vibe should adopt that distinction. Git commits are portable source identity; OT, CRDTs, filesystem overlays, and HMR are provider-local editing mechanisms.
+
+### Worktrees broaden the Builder
+
+A Worktree is a Git-backed workpiece that does not execute as a Gadget. Agents can mount commits discovered through Gatekeepers, read and edit the tree with the same source tools used for Gadgets, create commits, and pass those commits back to a Git provider. The UI now supports browsing and editing Worktrees as well.
+
+This suggests a broader Builder contract: the Builder reshapes software artifacts in a workspace, not only the source of one app. A Vibe Builder may edit an app, a reusable module, or an external repository without changing its user-facing malleability semantics.
+
+### Agent effects are becoming transactional
+
+Cloudflare OS also added step-transactional agent persistence: the transcript record explaining a step and the source changes produced by that step become durable together at a persistence barrier. A crash before the barrier loses the whole step rather than leaving source changes with no accountable transcript.
+
+Vibe should generalize this invariant beyond source:
+
+> An authoring step and the provenance explaining its source, configuration, dependency, composition, and capability changes should become durable atomically.
+
+### Gatekeepers remain below the Vibe semantic layer
+
+Gatekeepers are now an even stronger candidate implementation for Vibe capability brokers. Observation verification, restricted-data handling, action approval, credential fencing, and reusable Gatekeeper Kit primitives all strengthen the provider layer.
+
+Vibe should still own the public capability contract. A Cloudflare provider may implement that contract through Gatekeepers; a local provider may implement it differently.
+
+### What Cloudflare OS still does not supply
+
+Cloudflare OS now has a general workpiece substrate, but it still primarily organizes software around runtime/source containers. Vibe's distinctive layer remains:
+
+- **Resource** - durable user/domain data with stable identity.
+- **Tool** - a view, editor, transformer, analyzer, or interaction over Resources.
+- **Composition** - an arrangement and wiring of Tools, Resources, and capabilities.
+- **Recipe** - a declarative, inspectable, reversible customization.
+- **Module** - a versioned reusable implementation dependency.
+- **Capability** - explicit authority to cross a trust or effects boundary.
+
+Cloudflare workpieces are a placement mechanism for those semantics, not replacements for them.
+
 
 ## Verified Architectural Findings
 
@@ -164,7 +238,7 @@ This model supports:
 - Reviewing an accumulated change set
 - Making binding changes part of the same proposal
 
-Cloudflare OS uses Yjs as its live code representation and history substrate. Vibe can adopt the draft/mainline semantics while using files, worktrees, and Git.
+At the August baseline, Cloudflare OS used Yjs for this source flow. Current Cloudflare OS instead stores accepted source as real Git commits and uses CodeMirror operational transforms for live proposal edits. Vibe can now map its task-draft semantics much more directly onto the upstream model while keeping the live-edit transport outside the portable source contract.
 
 ### Live Sharing And Code Sharing Are Different
 
@@ -289,17 +363,20 @@ Synchronous approval remains the safe default.
 | Product center | Organization workspace and hosted personal apps | Portable app with integrated modification UX |
 | Runtime host | Workshop on Workers or local workerd | Browser-compatible shell, later native |
 | Builder | Integrated into Workshop | Logically separate and optionally installed |
-| App unit | Gadget instance | Source-bearing Vibe app |
+| App / composition unit | Workspace containing workpieces | Vibe composition / installation |
+| Executable placement | Gadget workpiece | App/tool runtime placement chosen by provider |
+| Editable Git placement | Worktree workpiece | Source/module/repository placement chosen by provider |
 | Client runtime | Sandboxed iframe | Sandboxed app canvas |
 | Server runtime | Dynamic Worker facet | Optional actor in Worker, process, or native host |
-| Source truth | Yjs document and Workshop mainline | Conventional files and Git |
-| Candidate model | Per-chat draft | Candidate worktree or overlay |
+| Source truth | Real Git commits for accepted Gadget source | Conventional files and Git commits |
+| Live edit synchronization | CodeMirror OT over chat proposals | Provider-local implementation detail |
+| Candidate model | Chat-scoped proposal over commit base | Vibe TaskDraft / candidate transaction |
 | App data | Per-Gadget SQLite | IndexedDB initially, adapters later |
 | External access | Gatekeeper bindings | Runtime and authoring capabilities |
 | App API | Cap'n Web capability interfaces | Generic actor messages in current draft |
 | Distribution | Blueprint or live Gadget share | `.vibeapp` with source, history, and artifact |
 | Configuration | Deployment settings and app code | Typed, layered, config-first public API |
-| Version history | Yjs changes and Blueprint versions | Standard Git plus task log |
+| Version history | Git commits plus chat/task provenance | Standard Git plus task log |
 | Offline/standalone | Local workerd possible; Gadget normally needs Workshop | Last-good app should run without Builder |
 | Native goal | Not central | Native shell is a target |
 | Collaboration | First-class | Deferred |
@@ -514,19 +591,40 @@ interface TransactionalCapability<Input, Preview, Result> {
 
 The agent and UI must know that `Preview` is speculative. A broker without a sound simulation blocks for approval.
 
-### 11. Keep Git As Vibe's Canonical Source History
 
-**Classification:** Reject Yjs as the initial source of truth; study it later.
+### 11. Keep Git Commits As Portable Source Identity
 
-Cloudflare OS uses Yjs to synchronize code and replay changes. That is valuable for multiplayer editing. It is not required for:
+**Classification:** Adopt.
 
-- One user
-- One Builder task
-- Conventional editors
-- Standard source checkout
-- Git diffs and history
+The August note rejected Yjs as Vibe's canonical source representation while retaining Git. Current Cloudflare OS has independently converged on the same durable boundary: accepted Gadget source is represented by real Git objects and commits, while live edits use an operational-transform layer.
 
-Vibe can later layer collaborative editing over task drafts. It should not introduce a second canonical source model before a collaboration requirement exists.
+Vibe should therefore make a sharper rule:
+
+```text
+Git commit
+  = durable, portable source identity
+
+OT / CRDT / filesystem overlay / HMR
+  = provider-local editing and preview mechanism
+```
+
+A hosted Cloudflare provider may use the upstream Git object store directly. A local provider may use an ordinary filesystem-backed repository. Vibe's public revision identifiers and package provenance should remain based on Git-compatible source identity rather than any live-sync transport.
+
+### 11a. Treat Workpieces As Placement, Not Product Semantics
+
+**Classification:** Adapt.
+
+Cloudflare's `WorkpieceId` abstraction is a useful execution and authoring boundary. Vibe should not copy it upward as the fundamental user model.
+
+A Resource, Tool, or Composition may be placed inside one Gadget, across several Gadgets, or partly in a Worktree. Placement should be allowed to change without changing the semantic model the user or Builder reasons about.
+
+### 11b. Make Authoring Steps Transactional
+
+**Classification:** Adopt.
+
+Cloudflare's step-transactionality work establishes a valuable invariant: the durable transcript explaining an agent step and that step's durable source effects should not diverge.
+
+Vibe should generalize the same rule so a Builder step commits its provenance together with any source, configuration, dependency, recipe, composition, or capability-request changes. A crash before the persistence barrier should not leave unexplained partial customization.
 
 ### 12. Evaluate Cap'n Web And workerd Independently
 
@@ -548,14 +646,18 @@ Vibe can adopt Cap'n Web without adopting Cloudflare OS. It can also use workerd
 | Binding requirements and local grants | Adopt | Phase 1 schema | Required for portable packages |
 | Gatekeeper-style brokers | Adopt | Before first external API | Credentials never reach generated code |
 | No ambient network | Adopt | First sandbox | Allow only explicit bindings |
-| Chat draft and mainline | Adapt | First source task | Back with Git worktrees or overlays |
+| Chat draft and mainline | Adopt/adapt | First source task | Map Vibe TaskDraft to the provider's chat-over-Git branch where possible |
 | Blueprint versus live share | Adopt | Package design | Implement independent instantiation first |
 | Build/use collaboration roles | Adapt | Before collaboration | Use caller's Builder and accounts |
 | Observation provenance | Adapt | Broker contract early, enforcement later | Prevent derived-data leaks |
 | Core/deployment split | Adopt | Repository and config design | Preserve no-fork customization |
 | Model bindings in runtime graph | Adopt | Actor manifest | Make runtime inference explicit |
 | Speculative queued effects | Defer | After stable brokers | Only with reliable plan/commit semantics |
-| Yjs canonical source | Reject for v0 | Revisit for collaboration | Git remains canonical |
+| Git commit source identity | Adopt | First source task | Shared durable boundary across Vibe and current Cloudflare OS |
+| Live edit synchronization | Provider-local | As needed | Cloudflare uses CodeMirror OT; Vibe does not expose OT/CRDT choice as ABI |
+| Workpiece placement | Adapt | Hosted substrate experiment | Use for execution/authoring boundaries below Resource/Tool/Composition |
+| Git Worktrees | Adopt through provider | Hosted substrate experiment | Strong primitive for external repos and reusable source |
+| Step-transactional authoring | Adopt | Builder transaction model | Persist effects and explanatory provenance together |
 | Dynamic Workers and Durable Objects | Optional backend | Substrate spike | Not a portable contract |
 | React Workshop frontend | Do not adopt as Vibe contract | Cloudflare edition only | Vibe UI remains independently specified |
 | Cloudflare account requirement | Reject as universal requirement | Hosted edition only | Local runner remains a target |
@@ -648,7 +750,7 @@ The Cloudflare OS substrate decision may additionally change SvelteKit, Git, Ind
 ### Conditional Candidates
 
 - **workerd:** Evaluate for hosted or local service actors.
-- **Yjs:** Evaluate only when concurrent source editing becomes active scope.
+- **Cloudflare Git/OT source machinery:** Strong hosted-provider reuse candidate; keep Git identity portable and OT provider-local.
 - **Existing Gatekeepers:** Potentially reuse in a Cloudflare-hosted edition, subject to their Worker and Durable Object dependencies.
 - **Agent harness:** Study its Code Mode environment and binding presentation; do not make it Vibe's only backend.
 
@@ -658,7 +760,7 @@ The Cloudflare OS substrate decision may additionally change SvelteKit, Git, Ind
 - The entire Workshop backend as Vibe's portable runtime
 - Durable Objects as the only storage API
 - Cloudflare-specific deployment configuration in app source
-- Yjs documents as Vibe's only editable source format
+- Provider-specific live-edit formats as Vibe's portable source identity
 
 The reviewed repositories use the Apache-2.0 license. Any copied code must retain the required license and notices. This note is an architecture recommendation, not legal advice.
 
@@ -752,26 +854,29 @@ Decision trigger: local process packaging, startup, filesystem, native bridge, a
 
 ## Conclusions
 
-Cloudflare OS provides strong evidence for the following shape:
+Cloudflare OS now provides stronger evidence for the following substrate shape:
 
 ```text
-isolated app instance
+workspace
+  + multiple typed workpieces
+  + Git-backed accepted source
+  + transient collaborative proposal editing
   + typed capabilities
   + no ambient authority
-  + credential-holding brokers
-  + task drafts
-  + independent blueprints
+  + credential-holding Gatekeepers
+  + independent Blueprints
   + provenance-aware sharing
-  + installation-level customization
+  + transactional agent effects
 ```
 
-Vibe should absorb that shape.
+Vibe should absorb that substrate shape while keeping Resource, Tool, Composition, Recipe, and Module semantics above it.
 
 Vibe should preserve its distinct commitments:
 
 - Portable source
-- Standard Git
-- Configuration-first customization
+- Standard Git source identity
+- Resource/Tool/Composition malleability semantics
+- Configuration- and recipe-first customization
 - Optional Builder
 - Last-good standalone behavior
 - Local and native paths
@@ -784,7 +889,12 @@ The next question is not whether Cloudflare OS contains useful ideas. It does. T
 - [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md)
 - [Vibe on Cloudflare OS](./2026-08-06-vibe-on-cloudflare-os.md)
 - [Cloudflare OS announcement](https://blog.cloudflare.com/cloudflare-os/)
-- [Cloudflare OS repository, reviewed revision](https://github.com/cloudflare/cloudflare-os/tree/aedcda8b3066ff666f57ae28ecef7341d6c2dee7)
+- [Cloudflare OS repository, August baseline](https://github.com/cloudflare/cloudflare-os/tree/aedcda8b3066ff666f57ae28ecef7341d6c2dee7)
+- [Cloudflare OS repository, September reassessment](https://github.com/cloudflare/cloudflare-os/tree/687aab049cf084030a42093c10c4dde3d9c33fb4)
+- [Multi-Gadget / workpiece plan](https://github.com/cloudflare/cloudflare-os/blob/687aab049cf084030a42093c10c4dde3d9c33fb4/plans/multi-gadget.md)
+- [Git-backed Gadget source plan](https://github.com/cloudflare/cloudflare-os/blob/687aab049cf084030a42093c10c4dde3d9c33fb4/plans/git-storage.md)
+- [Git Worktrees plan](https://github.com/cloudflare/cloudflare-os/blob/687aab049cf084030a42093c10c4dde3d9c33fb4/plans/worktrees.md)
+- [Step-transactional agent effects](https://github.com/cloudflare/cloudflare-os/blob/687aab049cf084030a42093c10c4dde3d9c33fb4/plans/step-transactionality.md)
 - [Cloudflare OS README](https://github.com/cloudflare/cloudflare-os/blob/aedcda8b3066ff666f57ae28ecef7341d6c2dee7/README.md)
 - [Cloudflare OS architecture instructions](https://github.com/cloudflare/cloudflare-os/blob/aedcda8b3066ff666f57ae28ecef7341d6c2dee7/AGENTS.md)
 - [Workshop shared API](https://github.com/cloudflare/cloudflare-os/blob/aedcda8b3066ff666f57ae28ecef7341d6c2dee7/packages/workshop-shared/src/api.ts)
