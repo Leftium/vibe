@@ -780,15 +780,15 @@ Countermeasure: pin research and experiments to revisions. Depend on Vibe-owned 
 
 ### Overbuilding Collaboration
 
-Observers, Yjs, permission graphs, and real-time multiplayer solve important problems but can overwhelm a local first version.
+Observer verification, permission graphs, live collaboration, and provider-specific synchronization solve important problems but can overwhelm a local first version.
 
 Countermeasure: shape portable metadata now, implement collaboration only after the single-user source transaction works.
 
 ### Creating Two Sources Of Truth
 
-Combining Yjs, files, and Git without a clear authority can lose edits or produce misleading history.
+Combining portable Git identity with a provider's transient OT/CRDT/filesystem state without a clear authority can lose edits or produce misleading history.
 
-Countermeasure: keep files and Git canonical in the independent Vibe architecture. If a Cloudflare edition uses Yjs, define deterministic import and export boundaries.
+Countermeasure: keep Git-compatible commits as portable source identity and treat OT/CRDT/filesystem overlays as provider-local proposal state with explicit promotion boundaries.
 
 ### Treating A Virtual Shell As A Sandbox
 
