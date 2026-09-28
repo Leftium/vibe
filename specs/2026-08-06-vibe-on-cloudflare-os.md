@@ -1072,9 +1072,9 @@ If the experiment fails, no foundation change is required. The lessons document 
 
 ### Dual source authority
 
-**Risk:** Yjs/Gadget state and Git disagree.
+**Risk:** A provider's transient OT/proposal state and Vibe's portable Git revision identity are both treated as authoritative.
 
-**Mitigation:** One authority per mode, explicit import/export, immutable revision identifiers, no silent two-way sync.
+**Mitigation:** Git-compatible commits define portable source identity; provider-local edit state remains provisional until an explicit acceptance/promotion boundary.
 
 ### False portability
 
