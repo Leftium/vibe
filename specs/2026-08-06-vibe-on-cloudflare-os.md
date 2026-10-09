@@ -8,17 +8,17 @@
 **Cloudflare OS starter revision targeted:** `9c18a2e8b0c3741e5f4813546bbf24be5bbb98ee`  
 **Related:** [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md), [What Vibe Can Learn From Cloudflare OS](./2026-08-06-cloudflare-os-lessons.md), [Vibe Runtime Providers and Placement](./2026-08-06-vibe-runtime-providers.md), [Vibe Reusable Modules and Upgrades](./2026-08-06-vibe-reusable-modules-and-upgrades.md)
 
-**Runtime placement note:** The companion runtime-provider specification refines this document's hosted-first assumption. Cloudflare-hosted, remote self-hosted, managed local, system local, and bundled local execution are provider profiles behind the same Vibe contracts. Where this document recommends hosted v0, treat that as a substrate candidate to test rather than a settled placement decision.
+**Runtime placement note:** Cloudflare OS remains an **experimental provider**, not Vibe's chosen first public runtime. The companion [runtime-provider specification](./2026-08-06-vibe-runtime-providers.md) keeps Cloudflare-hosted, remote self-hosted, managed local, system local, and bundled local profiles behind the same Vibe contracts. Any hosted-v0 plan below is conditional on a separate provider-selection decision.
 
 
 ## One Sentence
 
-Build the first hosted Vibe edition as a malleability layer over a Cloudflare OS workspace: Vibe owns Resources, Tools, Compositions, Recipes, modules, capability contracts, and last-good semantics, while Cloudflare OS supplies Git-backed workpieces, agent/task execution, Gatekeepers, collaboration, and sandboxed placement behind a provider adapter.
+Test Cloudflare OS as a candidate hosted provider for Vibe's malleability layer: Vibe retains Resources, Tools, Compositions, Recipes, modules, capability contracts, and last-good semantics, while an experimental Cloudflare adapter supplies Git-backed workpieces, agent/task execution, Gatekeepers, collaboration, and sandboxed placement.
 
 
 ## First-Screen Contract
 
-Vibe can plausibly use Cloudflare OS as its first serious runtime provider, but it should not become "Cloudflare OS with different branding."
+Cloudflare OS is a plausible runtime-provider experiment, but Vibe should not become "Cloudflare OS with different branding."
 
 The September 2026 reassessment materially improves the fit. Since the August proposal, Cloudflare OS has generalized one-Gadget workspaces into multi-workpiece workspaces, moved accepted Gadget source to real Git commits, replaced active Yjs editing with CodeMirror operational transforms, and added Git-backed Worktrees for arbitrary repositories.
 
@@ -48,7 +48,7 @@ Until that evidence exists, the provider-neutral architecture in the [Vibe App F
 
 ## Decision Sought
 
-Approve a Cloudflare OS substrate experiment for Vibe's hosted first edition.
+Authorize a bounded Cloudflare OS hosted-provider experiment. Do not select a default runtime, approve hosted-first delivery, or commit to a long-lived Cloudflare fork.
 
 Do not yet approve:
 
@@ -61,9 +61,9 @@ Do not yet approve:
 
 The decision after the experiment is one of:
 
-- **Go:** Cloudflare OS becomes the hosted v0 substrate behind Vibe contracts.
-- **Conditional go:** use selected components or a constrained fork while replacing the failing layer.
-- **No-go:** retain the architectural lessons and continue with an independent implementation.
+- **Go:** Cloudflare OS qualifies as a viable hosted-provider candidate behind Vibe contracts; selection still needs explicit approval after comparing runtime-provider evidence.
+- **Conditional go:** it is viable only if named layers are replaced or bounded patches pass defined exit tests.
+- **No-go:** do not use it as the Vibe runtime; retain the architectural lessons for an independent implementation.
 
 ## Why This Is Worth Testing
 
@@ -167,7 +167,7 @@ Fork or extend the Cloudflare OS starter, retain the upstream core at a pinned r
 
 - The Vibe product must reshape a Workshop-first user experience.
 - Some ordinary product changes may require patches to upstream core.
-- The first edition is hosted and Cloudflare-dependent.
+- This experimental deployment is hosted and Cloudflare-dependent; that does not predetermine Vibe's first public edition.
 - The live source authority is initially Cloudflare OS, not a local Git working tree.
 
 ### Option B: Cloudflare OS only as a remote Builder backend
@@ -205,7 +205,7 @@ Adopt ideas or libraries such as Cap'n Web, the Pi agent integration, or workerd
 
 ### Recommendation
 
-Use Option A for the experiment and, if it passes, for the hosted v0. Design the Vibe contracts so Option B or C can replace it later.
+Use Option A to test the complete Cloudflare substrate, but do not select it automatically after a passing experiment. The default-provider decision must compare a real local and remote runtime path under the companion [runtime-provider criteria](./2026-08-06-vibe-runtime-providers.md). Keep Options B and C viable through provider-neutral contracts.
 
 This recommendation is deliberately asymmetric:
 
@@ -921,7 +921,7 @@ Evidence:
 
 Classify every dependency as Vibe contract, documented Cloudflare API, internal API, or core patch.
 
-The experiment ends with **go**, **conditional go**, or **no-go** based on semantic leakage and patch burden, not on whether Cloudflare OS can store source in Git - that question is already answered upstream.
+The experiment ends with **go**, **conditional go**, or **no-go** based on semantic leakage and patch burden, not on whether Cloudflare OS can store source in Git - that was answered at the reviewed upstream pin. Go establishes candidate viability, not provider selection.
 
 ## Acceptance Matrix
 
@@ -951,7 +951,7 @@ The experiment ends with **go**, **conditional go**, or **no-go** based on seman
 
 ### Go
 
-Choose Cloudflare OS for hosted v0 when all required acceptance rows pass and:
+Classify Cloudflare OS as eligible for a hosted-v0 provider decision only when all required acceptance rows pass and:
 
 - The app runs without a model or active build session.
 - Cloudflare-specific code is contained in adapters and deployment code.
@@ -985,9 +985,11 @@ Do not build hosted v0 on Cloudflare OS if any of these remain true after the bo
 - The runtime cannot enforce Vibe's binding and actor boundaries.
 - Required production behavior depends on unsupported or private infrastructure.
 
-## Plan After a Go Decision
+## Conditional Plan After Go and Explicit Provider Selection
 
 ### Phase 1: Hosted Vibe prototype
+
+The phases below apply **only if** a separate provider-selection decision approves Cloudflare OS after Go. A passing substrate experiment does not override the runtime-provider spec's requirement to test at least one real local and one real remote provider. The minimal local/in-memory adapter in this experiment checks interface portability, not full local runtime viability.
 
 - Productize the empty-app and Hello World paths.
 - Add app library, run, build, settings, source, and recovery views.
@@ -1028,9 +1030,9 @@ This phase is intentionally downstream. Cloudflare OS can accelerate product val
 
 The [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md) already defines the provider-neutral Resource/Tool/Composition model and malleability ladder. The experiment tests one candidate placement of those semantics; it does not pre-approve Cloudflare OS as the canonical Vibe architecture.
 
-If the experiment passes, propose a focused Cloudflare-specific foundation revision:
+If the experiment passes **and Cloudflare OS is explicitly selected**, propose a focused Cloudflare-specific foundation revision:
 
-- Name Cloudflare OS as the hosted v0 substrate, not the universal architecture.
+- Name Cloudflare OS as the selected hosted-v0 provider, not the universal architecture.
 - Specify the Cloudflare adapter boundary and source/last-good mapping demonstrated in the spike.
 - Keep Git-compatible commit identity portable and live-edit synchronization provider-local.
 - Incorporate evidence on binding grants, per-collaborator authority, and observation provenance.
@@ -1068,7 +1070,7 @@ If the experiment fails, the provider-neutral semantic foundation still stands; 
 
 ### Cloud dependency
 
-**Risk:** Hosted v0 is not local-first and may inherit service limits or operational costs.
+**Risk:** Selecting Cloudflare-hosted v0 would not be local-first and could inherit service limits or operational costs.
 
 **Mitigation:** Describe it honestly as the hosted edition; preserve portable contracts and fund the local adapter only after product validation.
 

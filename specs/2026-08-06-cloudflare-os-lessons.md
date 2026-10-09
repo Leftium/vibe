@@ -373,9 +373,9 @@ Synchronous approval remains the safe default.
 | Candidate model | Chat-scoped proposal over commit base | Vibe TaskDraft / candidate transaction |
 | App data | Per-Gadget SQLite | IndexedDB initially, adapters later |
 | External access | Gatekeeper bindings | Runtime and authoring capabilities |
-| App API | Cap'n Web capability interfaces | Generic actor messages in current draft |
+| App API | Cap'n Web capability interfaces | Vibe-owned actor contracts, refined by the later [capability/RPC spec](./2026-09-03-vibe-capability-runtime-and-rpc.md) |
 | Distribution | Blueprint or live Gadget share | `.vibeapp` with source, history, and artifact |
-| Configuration | Deployment settings and app code | Typed, layered, config-first public API |
+| Configuration | Deployment settings and app code | Typed settings, Recipes, and Composition customization |
 | Version history | Git commits plus chat/task provenance | Standard Git plus task log |
 | Offline/standalone | Local workerd possible; Gadget normally needs Workshop | Last-good app should run without Builder |
 | Native goal | Not central | Native shell is a target |
@@ -721,7 +721,7 @@ These types are illustrative. Their purpose is to expose the missing conceptual 
 
 ## Implications For The Foundation Spec
 
-The [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md) should remain unchanged until the substrate experiment finishes. Regardless of that result, a later revision should consider:
+The [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md) now includes provider-neutral Resource, Tool, Composition, and Recipe semantics without selecting a substrate. Additional Cloudflare-specific commitments must wait for experiment evidence. The following remain candidates for later design work, irrespective of the Cloudflare provider decision:
 
 1. Demoting generic `ActorMessage` envelopes from primary call interface to event and transport representation.
 2. Adding typed capability interfaces to every externally callable actor.
@@ -854,7 +854,7 @@ Decision trigger: local process packaging, startup, filesystem, native bridge, a
 
 ## Conclusions
 
-Cloudflare OS now provides stronger evidence for the following substrate shape:
+At the pinned September revision, Cloudflare OS provides stronger evidence for the following substrate shape:
 
 ```text
 workspace
@@ -882,7 +882,7 @@ Vibe should preserve its distinct commitments:
 - Local and native paths
 - A runtime contract not owned by one host
 
-The next question is not whether Cloudflare OS contains useful ideas. It does. The companion proposal asks whether its implementation can serve as Vibe's first kernel without making those Vibe commitments impossible.
+The next question is not whether Cloudflare OS contains useful ideas. It does. The companion proposal tests whether its implementation can serve as one viable hosted provider without compromising those Vibe commitments or choosing Vibe's default runtime in advance.
 
 ## References
 

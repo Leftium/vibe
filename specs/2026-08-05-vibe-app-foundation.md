@@ -143,7 +143,7 @@ This specification covers:
 
 - The stable app shell, integrated Builder Client, and app canvas
 - A shared and optional Builder
-- A fixed SvelteKit application stack for the first version
+- A fixed SvelteKit stack for the independent local walking skeleton (not a default-provider decision)
 - Readable source plus a self-contained last-good runtime artifact
 - Git-backed source history and manual editing
 - Candidate builds, health checks, atomic promotion, and rollback
@@ -185,7 +185,7 @@ The status column distinguishes product decisions from provisional technology ch
 | Builder ownership | Resolved | Design coherence | Use one optional shared Builder for many apps. It owns credentials, agent execution, tools, and builds. |
 | Runtime dependency | Resolved | Design coherence | Accepted app behavior must run without an LLM or Builder. |
 | Source format | Resolved | Design coherence | Ship readable conventional source separately from generated artifacts. |
-| Initial framework | Resolved for v0 | Taste under constraints | Use one fixed SvelteKit stack to reduce the build and repair search space. |
+| Initial framework | Resolved for local walking skeleton | Taste under constraints | Use one fixed SvelteKit stack for the independent implementation track; a hosted provider experiment may use a different build shape behind Vibe contracts. |
 | Runtime artifact | Provisional | Evidence | Prefer one self-contained `app.html` artifact. A Phase 0 spike must confirm the supported SvelteKit build path and record a fallback. |
 | Source history | Resolved | User requirement | Use standard Git objects and refs so history is inspectable by ordinary tools. |
 | Promotion model | Resolved | Design coherence | Build candidates in isolation and atomically promote a pointer to the source revision and artifact. |
@@ -1399,6 +1399,8 @@ These require a native shell, runtime capabilities, background actors, and stron
 These require identity, synchronization, conflict semantics, hosting, and server capabilities. They are roadmap validation cases, not first-version requirements.
 
 ## Implementation Plan
+
+The phases below describe the independent local SvelteKit walking-skeleton track. They do not determine Vibe's default public runtime. The [Cloudflare OS substrate experiment](./2026-08-06-vibe-on-cloudflare-os.md) evaluates another provider behind the same contracts, while the [runtime-provider specification](./2026-08-06-vibe-runtime-providers.md) keeps final provider selection open.
 
 ### Phase 0: Feasibility Spikes
 
