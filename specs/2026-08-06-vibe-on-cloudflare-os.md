@@ -2,46 +2,53 @@
 
 **Date:** 2026-08-06  
 **Status:** Proposed substrate experiment - architecture decision pending  
-**Cloudflare OS revision targeted:** `aedcda8b3066ff666f57ae28ecef7341d6c2dee7`  
+**Updated:** 2026-10-09  
+**Cloudflare OS August baseline:** `aedcda8b3066ff666f57ae28ecef7341d6c2dee7`  
+**Cloudflare OS September reference (main on 2026-09-28):** `687aab049cf084030a42093c10c4dde3d9c33fb4`  
 **Cloudflare OS starter revision targeted:** `9c18a2e8b0c3741e5f4813546bbf24be5bbb98ee`  
 **Related:** [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md), [What Vibe Can Learn From Cloudflare OS](./2026-08-06-cloudflare-os-lessons.md), [Vibe Runtime Providers and Placement](./2026-08-06-vibe-runtime-providers.md), [Vibe Reusable Modules and Upgrades](./2026-08-06-vibe-reusable-modules-and-upgrades.md)
 
-**Runtime placement note:** The companion runtime-provider specification refines this document's hosted-first assumption. Cloudflare-hosted, remote self-hosted, managed local, system local, and bundled local execution are provider profiles behind the same Vibe contracts. Where this document recommends hosted v0, treat that as a substrate candidate to test rather than a settled placement decision.
+**Runtime placement note:** Cloudflare OS remains an **experimental provider**, not Vibe's chosen first public runtime. The companion [runtime-provider specification](./2026-08-06-vibe-runtime-providers.md) keeps Cloudflare-hosted, remote self-hosted, managed local, system local, and bundled local profiles behind the same Vibe contracts. Any hosted-v0 plan below is conditional on a separate provider-selection decision.
+
 
 ## One Sentence
 
-Build the first hosted Vibe edition as an app-centric Cloudflare OS distribution behind Vibe-owned runtime, Builder, source, and package contracts, while preserving a credible path to a local runner.
+Test Cloudflare OS as a candidate hosted provider for Vibe's malleability layer: Vibe retains Resources, Tools, Compositions, Recipes, modules, capability contracts, and last-good semantics, while an experimental Cloudflare adapter supplies Git-backed workpieces, agent/task execution, Gatekeepers, collaboration, and sandboxed placement.
+
 
 ## First-Screen Contract
 
-Vibe can plausibly be built on Cloudflare OS, but it should not become "Cloudflare OS with different branding."
+Cloudflare OS is a plausible runtime-provider experiment, but Vibe should not become "Cloudflare OS with different branding."
 
-The proposed split is:
+The September 2026 reassessment materially improves the fit. Since the August proposal, Cloudflare OS has generalized one-Gadget workspaces into multi-workpiece workspaces, moved accepted Gadget source to real Git commits, replaced active Yjs editing with CodeMirror operational transforms, and added Git-backed Worktrees for arbitrary repositories.
 
-- Cloudflare OS supplies the first hosted execution substrate: the Workshop kernel, agent loop, isolated Gadget clients and servers, Gatekeepers, storage, collaboration, and Blueprint machinery.
-- Vibe supplies the product model: an app-centric shell, an optional external Builder, modular actors, configuration-first customization, readable source export, last-good recovery, and a portable app contract.
-- A narrow adapter layer prevents app code from importing Cloudflare OS APIs directly.
+The proposed split is now:
 
-This is not yet the selected architecture. Cloudflare OS is early access, its natural product unit is a Gadget inside a Workshop, and its live source model differs from Vibe's file-and-Git direction. The first implementation must therefore be a bounded substrate experiment, not an open-ended fork.
+- **Vibe supplies the semantic malleability layer:** Resources, Tools, Compositions, Recipes, versioned modules, a malleability ladder, provider-neutral runtime capabilities, package semantics, and last-good recovery.
+- **Cloudflare OS supplies one execution/authoring provider:** workspace identity, Gadget and Worktree workpieces, Git-backed source history, chat-scoped proposals, the agent harness, Gatekeepers, storage, collaboration, and Blueprint machinery.
+- **A narrow adapter owns placement:** Vibe semantic objects may co-locate in one Gadget or span several workpieces when authority, state ownership, lifecycle, failure isolation, scaling, or reuse justify it.
+- **App and tool code imports Vibe contracts, not Workshop internals.** The Cloudflare-specific mapping stays below the adapter boundary.
+
+The experiment should therefore stop testing whether Vibe can force a Git-shaped source model onto Yjs or force a multi-component product into one Gadget. Upstream has largely removed those mismatches. The remaining question is whether Vibe's semantic layer can stay cleanly above Cloudflare workpieces while preserving portability to a local/native provider.
 
 The experiment succeeds only if one vertical slice proves all of the following:
 
-1. A blank Vibe app opens as an ordinary app, with Builder chat available but not required to run it.
-2. A user asks the Builder to add "Hello World," sees the change immediately, and accepts it.
-3. The app can be closed and reopened with "Hello World" present without invoking an LLM.
-4. App code uses Vibe-owned APIs rather than Cloudflare-specific imports.
-5. The same typed capability is callable by the app UI and the Builder agent.
-6. A user can change an exposed setting without an LLM or source edit.
-7. A broken change does not replace the last-good app.
-8. Readable source can be exported, edited with ordinary tools, and imported without silently losing meaning.
-9. A shared package contains code and declared requirements, but no credentials or private runtime data.
+1. One Vibe composition can be represented by a Cloudflare workspace without exposing Workpiece/Gadget terminology as the product model.
+2. A Builder task maps cleanly to Cloudflare's chat-over-Git proposal flow and produces an accepted Git revision.
+3. The same Vibe Resource can be presented through at least two Tools without copying its domain data.
+4. Placement can change - for example, a capability-owning component can move to a separate workpiece - without changing the Vibe semantic contract.
+5. The same typed Vibe capability is callable by UI code and the Builder through a Gatekeeper-backed adapter.
+6. Accepted behavior runs with no LLM or active Builder.
+7. A broken accepted/source revision does not replace the Vibe last-good running revision.
+8. Source and package state round-trip through ordinary Git/files without credentials, grants, private runtime data, or Builder history.
+9. A simple local/in-memory adapter can implement the same Vibe capability and Resource/Tool contracts, proving Cloudflare types have not leaked upward.
 10. The required Cloudflare OS patch set is small, named, and maintainable.
 
-Until that evidence exists, the independent architecture in the [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md) remains the baseline.
+Until that evidence exists, the provider-neutral architecture in the [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md) remains the baseline.
 
 ## Decision Sought
 
-Approve a Cloudflare OS substrate experiment for Vibe's hosted first edition.
+Authorize a bounded Cloudflare OS hosted-provider experiment. Do not select a default runtime, approve hosted-first delivery, or commit to a long-lived Cloudflare fork.
 
 Do not yet approve:
 
@@ -49,14 +56,14 @@ Do not yet approve:
 - A production launch on the current upstream
 - A deep or indefinite fork
 - Cloudflare-specific APIs in app source
-- Replacing readable files and Git with Yjs across all Vibe editions
+- Exposing Cloudflare's OT or workpiece storage model as Vibe's portable source ABI
 - Abandoning a local or native runner
 
 The decision after the experiment is one of:
 
-- **Go:** Cloudflare OS becomes the hosted v0 substrate behind Vibe contracts.
-- **Conditional go:** use selected components or a constrained fork while replacing the failing layer.
-- **No-go:** retain the architectural lessons and continue with an independent implementation.
+- **Go:** Cloudflare OS qualifies as a viable hosted-provider candidate behind Vibe contracts; selection still needs explicit approval after comparing runtime-provider evidence.
+- **Conditional go:** it is viable only if named layers are replaced or bounded patches pass defined exit tests.
+- **No-go:** do not use it as the Vibe runtime; retain the architectural lessons for an independent implementation.
 
 ## Why This Is Worth Testing
 
@@ -66,7 +73,11 @@ Cloudflare OS already implements much of the hard platform work that Vibe would 
 - Isolated client and server execution
 - A typed API exposed to both UI code and the agent
 - Narrow, credential-hiding resource brokers
+- Multi-workpiece workspaces containing several executable or source-bearing units
+- Real Git commits for accepted Gadget source, with chat-scoped proposal editing over a commit base
+- Git-backed Worktrees for external repositories and reusable source
 - Draft changes that can be previewed before reaching shared mainline code
+- Step-transactional agent persistence that ties durable edits to their explanatory transcript
 - Live collaboration and copy-by-Blueprint sharing
 - Per-collaborator authority
 - A deployment customization pattern around a pinned core
@@ -92,22 +103,52 @@ It does not specify:
 - Every Cloudflare service used in production
 - The complete local or native runner
 - A compatibility commitment to arbitrary Cloudflare OS Gadgets
-- A migration of the existing foundation spec before the experiment
+- A decision to make Cloudflare OS the foundation's default provider before the experiment
+
 
 ## Terminology
 
 | Vibe term | Cloudflare OS mechanism in the hosted experiment | Important difference |
 | --- | --- | --- |
-| App | One Gadget instance plus Vibe metadata | Vibe treats the app as the primary product, not as a panel inside a general Workshop |
-| App UI | Gadget client | It imports only the Vibe runtime contract |
-| App backend | Gadget server | It is reached through the Vibe runtime adapter |
-| Actor | A Vibe module and API namespace inside an app | An actor is not necessarily a separate Gadget or Worker |
-| Binding | A declared requirement plus a user-specific capability grant | A requirement never grants authority by itself |
-| Connector | A Vibe-facing adapter backed by a Gatekeeper or native provider | Secrets stay outside app code |
-| Builder | Vibe chat, planning, editing, preview, and acceptance service | It may be embedded in the hosted deployment but is logically external to the app |
-| Mainline | The accepted Gadget source revision | Vibe also records a last-good revision and an export revision |
-| Package | A portable Vibe source snapshot and requirement manifest | It must exclude credentials, user data, and chat history |
-| Template | A Vibe package or a Cloudflare OS Blueprint with Vibe metadata | Installing creates an independent instance |
+| Composition / installation | One Cloudflare workspace plus Vibe metadata | Vibe models user intent and semantic composition; the workspace is provider placement |
+| Resource | Vibe-owned domain data reached through runtime/storage/capability contracts | A Resource is not inherently a Gadget or Worktree |
+| Tool | Vibe view/editor/transformer over Resources | Several Tools may co-locate in one Gadget |
+| Workpiece placement | Gadget or Worktree with a `WorkpieceId` | Provider concept below the Vibe semantic layer |
+| Executable placement | Gadget workpiece | Not every Vibe Tool or Actor gets its own Gadget |
+| Editable Git placement | Worktree workpiece | Useful for modules/external repos; it need not be executable |
+| Actor | Vibe module/API/lifecycle unit | May live inside a Gadget or cross a workpiece boundary when justified |
+| Binding / capability | Declared Vibe requirement plus user-specific grant | Cloudflare provider typically implements the grant through a Gatekeeper |
+| Connector | Vibe-facing capability adapter backed by a Gatekeeper or native provider | Secrets stay outside app/tool code |
+| Builder | Vibe malleability agent and task service | A Cloudflare chat can implement one Vibe TaskDraft |
+| TaskDraft | One proposed Vibe authoring transaction | Maps naturally to Cloudflare chat proposal state over Git |
+| Accepted revision | Git commit accepted into provider mainline | Vibe still separately tracks last-good/running state |
+| Package | Portable Vibe source, semantic manifest, requirements, recipes, and dependency lock | Excludes credentials, user data, and chat history |
+| Template | Vibe template or Cloudflare Blueprint | Instantiation creates an independent copy |
+| Module | Ongoing versioned reusable dependency | Cloudflare Blueprint copy semantics do not replace this |
+
+### Placement principle
+
+Cloudflare workpieces are deployment boundaries, not Vibe product semantics.
+
+```text
+Vibe semantic world
+
+Resource <----> Tool <----> Tool
+   \             \        /
+    \          Composition
+     \             |
+        Capability / Recipe / Module
+
+---------------- provider boundary ----------------
+
+Cloudflare workspace
+
+  Gadget      Gadget      Worktree
+      \        |          /
+       Gatekeeper capabilities
+```
+
+Co-locate by default. Split into another workpiece only when authority, state ownership, independent lifecycle, failure isolation, scaling, or reuse warrants a stronger boundary.
 
 ## Options Considered
 
@@ -126,7 +167,7 @@ Fork or extend the Cloudflare OS starter, retain the upstream core at a pinned r
 
 - The Vibe product must reshape a Workshop-first user experience.
 - Some ordinary product changes may require patches to upstream core.
-- The first edition is hosted and Cloudflare-dependent.
+- This experimental deployment is hosted and Cloudflare-dependent; that does not predetermine Vibe's first public edition.
 - The live source authority is initially Cloudflare OS, not a local Git working tree.
 
 ### Option B: Cloudflare OS only as a remote Builder backend
@@ -164,7 +205,7 @@ Adopt ideas or libraries such as Cap'n Web, the Pi agent integration, or workerd
 
 ### Recommendation
 
-Use Option A for the experiment and, if it passes, for the hosted v0. Design the Vibe contracts so Option B or C can replace it later.
+Use Option A to test the complete Cloudflare substrate, but do not select it automatically after a passing experiment. The default-provider decision must compare a real local and remote runtime path under the companion [runtime-provider criteria](./2026-08-06-vibe-runtime-providers.md). Keep Options B and C viable through provider-neutral contracts.
 
 This recommendation is deliberately asymmetric:
 
@@ -235,7 +276,7 @@ This rule applies to generated app code as well as hand-written platform code. I
 
 ## Hosted App Contract
 
-A hosted Vibe app is one Cloudflare OS Gadget instance with a Vibe manifest and a small runtime shim.
+A hosted Vibe composition is installed in a Cloudflare OS workspace, with a Vibe manifest and runtime shim. The smallest composition may run inside one Gadget; larger compositions can use several Gadgets or Worktrees as provider-selected execution and authoring placements. Resource, Tool, and Composition identity does not change when their workpiece placement changes.
 
 The manifest is readable source, not generated deployment metadata. A provisional shape is:
 
@@ -275,6 +316,8 @@ The experiment may revise field names. It must preserve these semantics:
 - Configuration defaults are packageable.
 - User configuration and app data are not packageable by default.
 - Unknown required features fail clearly instead of degrading silently.
+
+This Actor-based Hello World manifest is illustrative, not the final semantic schema. The experiment must make Resource, Tool, and Composition descriptors (or references to them), compatible protocols, Recipe references, module locks, and capability requirements discoverable separately from provider workpiece IDs. Its exact field layout is deliberately left to the vertical slice.
 
 ## Runtime Contract
 
@@ -328,32 +371,39 @@ The Cloudflare runtime adapter translates:
 
 App source sees none of those implementation details.
 
-## Actors on Cloudflare OS
 
-Cloudflare OS and Vibe use different module granularity. A Gadget is a good app isolation boundary, but creating a Gadget or Dynamic Worker for every small actor would make modularity expensive and obscure.
+## Actors and Tools on Cloudflare OS
 
-The hosted mapping should therefore be:
+Vibe's semantic and implementation units do not map one-to-one onto Cloudflare workpieces.
 
-- One Vibe app instance maps to one Gadget by default.
-- One actor maps to one typed API namespace and lifecycle module inside that Gadget.
-- An actor declares its configuration, events, storage namespace, and binding requirements.
-- The actor registry can enable, disable, inspect, and health-check actors independently.
-- An actor crosses into a separate Gatekeeper or Worker only when authority, failure isolation, scaling, or reuse justifies the boundary.
+Default mapping:
 
-A minimal descriptor:
+- Several lightweight Vibe Tools and Actors may live together in one Gadget.
+- A Resource keeps Vibe-level identity even if its storage or access path changes.
+- A Tool is a view/editor/transformer over Resources, not an execution process.
+- A capability-owning Actor may cross into another Gadget, Worker, or Gatekeeper when authority or failure isolation justifies it.
+- A Git-backed module or external repository may appear as a Worktree during authoring without becoming part of the running composition.
+- Placement is recorded as implementation metadata so the Builder can change it without changing the public semantic model.
 
-```ts
-export interface VibeActorDescriptor {
-  id: string;
-  apiVersion: string;
-  enabledByDefault: boolean;
-  requires: readonly VibeBindingRequirement[];
-  configSchema?: string;
-  start(context: VibeActorContext): Promise<VibeActor>;
-}
+This preserves the existing Vibe actor rule: in-process by default, stronger isolation on evidence. Cloudflare's new workpiece model makes that rule easier to implement because Vibe no longer has to pretend the entire composition is one Gadget.
+
+A minimal semantic relationship is:
+
+```text
+Resource
+  -> viewed/edited by Tool
+       -> implemented by Module
+            -> placed in Gadget when executable
+
+Capability
+  -> granted through provider adapter
+       -> Gatekeeper in Cloudflare provider
+
+External/module source
+  -> mounted as Worktree while being edited
 ```
 
-This preserves the plugin-architecture lesson: small modules communicate through standard APIs, can be shared independently, and can be disabled when they fail. It avoids forcing one infrastructure process per conceptual module.
+The Builder should reason first about Resource, Tool, Composition, Recipe, Module, and Capability. Workpiece placement is a downstream implementation decision unless the user explicitly asks about it.
 
 ## Builder Boundary
 
@@ -435,53 +485,57 @@ The app and Builder do not need to be one module or one distributable. They need
 
 Hosted v0 can use Cloudflare OS's existing draft and preview mechanics. A later local Builder can implement the same flow through a local dev server, filesystem watcher, and hot-module reload.
 
+
 ## Source and Revision Model
 
-This is the largest mismatch between Vibe and Cloudflare OS.
+The largest August mismatch has mostly disappeared upstream.
 
-Cloudflare OS uses collaborative live documents and distinguishes agent draft changes from mainline. Vibe's foundation favors readable files, Git history, and durable last-good artifacts. Trying to make both systems concurrently authoritative would create ambiguous revisions and fragile synchronization.
+At the pinned September revision, Cloudflare OS stores accepted Gadget source as real Git objects and commits. A chat holds proposed edits over a known commit base; updating a stale chat performs a three-way merge into the proposal before acceptance. Live editing uses CodeMirror operational transforms, but OT state is not the durable source identity.
 
-### Rule: one source authority per execution mode
+Vibe should therefore use one durable rule across providers:
 
-- In hosted v0, the Gadget mainline is the live source authority.
-- In a future local runner, the filesystem and Git working tree are the live source authority.
-- Moving between them is an explicit export or import operation.
-- Silent bidirectional synchronization is out of scope.
+```text
+Git-compatible commit
+  = portable source identity
+
+provider-local OT / CRDT / filesystem overlay / HMR
+  = live authoring and preview mechanism
+```
+
+### Hosted Cloudflare mapping
+
+A Vibe `TaskDraft` should map to the provider's chat-scoped proposal rather than introducing a second worktree/overlay system:
+
+```text
+accepted Git head
+  -> Vibe TaskDraft / Cloudflare chat
+      -> source + config + composition proposals
+      -> live preview
+      -> update from head if stale
+      -> Vibe validation
+      -> accept
+  -> new Git head
+```
+
+Vibe attaches additional semantics to the transaction: task purpose, recipe/config deltas, dependency changes, capability deltas, validation state, and last-good promotion. Those do not require a competing source authority.
+
+### Step transactionality
+
+A Builder step and the provenance that explains it should become durable atomically. The Cloudflare provider should reuse upstream step-transactional persistence for source effects where possible; Vibe should extend the same conceptual transaction to configuration, module, recipe, composition, and capability-request changes.
+
+A crash before the authoring barrier should not leave unexplained partial customization.
 
 ### Portable source snapshot
 
-A `VibeSourceSnapshot` contains:
+A `VibeSourceSnapshot` contains normal relative paths, readable source, the Vibe semantic manifest, configuration schemas/defaults, dependency declarations and lock information, source revision identity, and known provenance.
 
-- Normalized relative paths
-- UTF-8, unminified source text
-- The Vibe manifest
-- Configuration schemas and packageable defaults
-- Dependency declarations and a reproducible lock representation
-- A source revision identifier
-- The parent import or export revision when known
-- Format and runtime API versions
+It excludes credentials, grants, private app data, Builder chat, local overrides unless explicitly selected, and protected resource contents.
 
-It excludes:
+The Cloudflare adapter should export from the accepted Git tree. A future local provider may use an ordinary filesystem-backed Git repository. Moving between providers remains an explicit install/import/export operation; Vibe does not require silent bidirectional synchronization.
 
-- Credentials and tokens
-- User binding grants
-- App data
-- User configuration unless explicitly selected
-- Build chat
-- Observed private resource identifiers
-- Deployment secrets
+### Worktrees
 
-### Hosted history
-
-For the experiment:
-
-- Cloudflare OS draft state powers conversational iteration.
-- Accepting a change creates a Vibe accepted revision.
-- Validation promotes that revision to last-good.
-- Source export produces a deterministic snapshot for that accepted revision.
-- Git may store exported snapshots, but it is not the live hosted authority.
-
-If the hosted edition later exposes Git as a first-class workflow, it should use explicit import, export, branch, and merge operations. It should not pretend Yjs edits and a Git working tree are automatically the same transaction.
+Cloudflare Worktrees are a strong authoring primitive for source that is not an executable Gadget: external repositories, reusable modules, or code being prepared for upstream contribution. They are provider placement, not the Vibe package format.
 
 ### Determinism test
 
@@ -489,12 +543,12 @@ For a fixed accepted revision:
 
 1. export twice;
 2. compare normalized file paths and contents;
-3. import the export into a fresh app;
-4. run its acceptance checks;
+3. import into a fresh composition;
+4. run acceptance checks;
 5. export again;
-6. compare the semantic snapshot.
+6. compare the semantic snapshot and Git tree.
 
-Generated timestamps, instance identifiers, and deployment metadata must not make source content drift.
+Generated timestamps, provider-local workpiece IDs, and deployment metadata must not make portable source drift.
 
 ## Last-Good and Recovery
 
@@ -558,17 +612,11 @@ Each effective value should expose provenance so the user and agent can answer:
 - What would happen if this override were removed?
 - Does changing it affect only me or everyone using this app?
 
-### Config-first Builder policy
+### Configuration within malleability-first selection
 
-When fulfilling a request, the Builder should try:
+The Builder and direct UI follow the [foundation malleability ladder](./2026-08-05-vibe-app-foundation.md#malleability-ladder). Try a session tweak, preset, typed configuration, or supported Recipe/Composition change before escalating to a compatible Tool/Module or source patch. A Tool change may be more appropriate than adding a setting: "show these tasks on a calendar" should reuse Task Resources through a Calendar Tool when one is available.
 
-1. an existing high-level setting;
-2. an advanced setting;
-3. a binding or connector option;
-4. an actor replacement or extension;
-5. a source change.
-
-This is a preference, not a prohibition. The Builder should explain when a lower-level change is needed and may propose a new stable setting after resolving a recurring source-level problem.
+This is a preference for the smallest supported reversible operation, not a prohibition on source edits. A recurring source-level fix may justify a new typed setting or Tool interface. All mechanisms use their own validation and acceptance paths; ordinary direct configuration remains usable without the Builder.
 
 ### Configuration acceptance
 
@@ -777,210 +825,117 @@ If the experiment passes, organize Vibe-owned work so upstream coupling is visib
 
 Exact placement should follow upstream's extension conventions discovered during the experiment. The architectural requirement is that Vibe contracts and Cloudflare adapters remain visibly separate.
 
+
 ## Substrate Experiment
 
-The experiment is one vertical slice. It is not a general platform build.
+The revised experiment tests the remaining Vibe-specific boundaries rather than re-solving Git history or multi-Gadget placement.
 
-### Stage 0: Pin and inventory
+### Stage 0: Reproduce the pinned revision and check upstream drift
 
 Actions:
 
-- Pin the two reviewed upstream revisions.
-- Record licenses and required notices.
-- Map supported extension points in Workshop frontend, Workshop backend, shared API, Gadget runtime, Gatekeepers, and Blueprint import/export.
+- Start from `687aab049cf084030a42093c10c4dde3d9c33fb4` to reproduce the September analysis; compare against upstream `main` before choosing the actual experiment pin, and record that SHA.
+- Inventory public APIs and any Vibe-required patches.
+- Verify the Workpiece, Gadget, Worktree, Git, Gatekeeper, Blueprint, and chat-proposal seams at the chosen experiment pin. Record any changes since the September reference.
 - Create `PATCHES.md` before the first core change.
-- Record all assumptions that are supported only by upstream README text rather than a stable API.
 
 Evidence:
 
-- Reproducible upstream checkout
-- Dependency and service inventory
-- Initial extension-versus-patch map
+- Reproducible checkout of the recorded experiment SHA, with a comparison to the September reference.
+- Explicit adapter-versus-patch map.
+- No assumption depends only on the obsolete August source model.
 
-Stop condition:
+### Stage 1: Resource plus two Tools
 
-- The pinned project cannot run in its documented local environment or requires unavailable private infrastructure.
+Build the smallest semantic vertical slice around Project Notebook tasks.
 
-### Stage 1: Empty Vibe app
+```text
+Task Resource
+  -> List Tool
+  -> second Tool, e.g. Kanban
+```
 
-Actions:
-
-- Create a Vibe deployment profile from the starter.
-- Add an app library route and an open-app route.
-- Create an empty-app Blueprint with a Vibe manifest.
-- Render the app as the primary surface.
-- Place Builder chat beside it in build mode.
-- Provide a run route without the Builder panel.
+Both Tools operate on the same Task identity/state. They may initially co-locate in one Gadget.
 
 Evidence:
 
-- A new user can create and open an empty app.
-- Refresh and reopen preserve the app instance.
-- The run view has no model-dependent startup behavior.
+- Switching/adding a Tool does not copy Task data.
+- Builder and UI can identify the Resource and Tool separately from the Gadget implementing them.
+- Opening the accepted composition invokes no model.
 
-Stop condition:
+### Stage 2: Malleability ladder
 
-- Making the app primary requires a broad rewrite of the Workshop's core navigation and lifecycle.
+Starting from the List Tool, exercise:
 
-### Stage 2: Hello World through chat
-
-Actions:
-
-- Give the Builder only the Vibe manifest and app-facing APIs in its authoring instructions.
-- Prompt: "Add Hello World to this app."
-- Stream or reload the draft into the preview surface.
-- Accept the change.
-- Close the build session and open a fresh run session.
-- Disable model authorization and open the app again.
+```text
+session-only presentation tweak
+  -> keep as typed config/recipe
+  -> add/swap a compatible Tool
+  -> create a tiny Tool/module only when needed
+  -> source change as final escalation
+```
 
 Evidence:
 
-- The visible text is produced by accepted source.
-- Immediate preview works without restarting the whole deployment.
-- Reopen renders the accepted result.
-- Network or service logs show no LLM call during ordinary run.
-- Generated code contains no Cloudflare OS import.
+- The Builder chooses the smallest local reversible mechanism that satisfies the request.
+- A session Try can be undone without modifying durable configuration or Resource data; Keep promotes a validated typed setting or Recipe.
+- A kept Composition change is inspectable and reversible without replaying the authoring chat or rewriting source.
+- Direct/manual configuration uses the same underlying contracts as Builder changes.
 
-Stop condition:
+### Stage 3: Native TaskDraft over Cloudflare Git/OT
 
-- Preview requires publishing a full deployment for every edit.
-- Accepted Gadget execution depends on a live model call.
-
-### Stage 3: Shared typed actor API
-
-Actions:
-
-- Add a small `greeting` actor.
-- Package it as a versioned actor module.
-- Add a composition root that consumes the actor through its typed API.
-- Expose one typed method, such as `getGreeting()`.
-- Call it from the app UI.
-- Expose the same method to the Builder agent.
-- Open two apps using the same actor package and verify separate actor state and grants.
-- Disable the actor and verify a designed unavailable state.
+Ask the Builder for a source-level change.
 
 Evidence:
 
-- UI and agent use one API definition and authority path.
-- Both apps resolve the same actor code identity without sharing state or authority.
-- Disabling the actor does not corrupt the rest of the app.
-- Errors cross the adapter in Vibe's normalized form.
+- Vibe TaskDraft maps to Cloudflare chat proposal state.
+- Preview runs before acceptance.
+- Accepted source has a stable Git commit identity.
+- Stale proposal update/merge is handled by upstream machinery rather than a second Vibe merge layer.
+- Step provenance and durable source effects remain accountable together; an interrupted authoring step leaves no unexplained partial accepted edit.
 
-Stop condition:
+### Stage 4: Capability-backed placement split
 
-- The agent needs a privileged duplicate API or ambient access to call the actor.
-
-### Stage 4: Config without code
-
-Actions:
-
-- Publish a schema for `greeting.text`.
-- Generate the settings control.
-- Change it to "Hello Vibe" with the Builder disconnected.
-- Reopen the app.
-- Export the source package.
+Add one narrow external capability, then move the authority-owning implementation across a stronger provider boundary if warranted.
 
 Evidence:
 
-- The app updates without an LLM call.
-- The value persists for the intended scope.
-- The package contains the schema and default, not the installation override.
-- The Builder can later discover the same setting rather than editing source.
+- Vibe semantic APIs and Resource identity do not change when placement changes; only one Resource owner remains authoritative.
+- The Cloudflare adapter uses Gatekeepers; app/tool code receives no provider credential.
+- UI and Builder use the same typed capability.
+- A trivial local/in-memory adapter implements the same Vibe contract.
 
-Stop condition:
+### Stage 5: Last-good and package round trip
 
-- Configuration can be changed only by editing Gadget source.
-
-### Stage 5: Capability binding
-
-Actions:
-
-- Add one narrow demonstration binding whose credential or resource authority lives outside the app.
-- Declare the requirement in the manifest.
-- Install or open the app without a grant and show a setup state.
-- Grant the binding and call it from UI and agent.
-- Inspect the package and app storage for credential leakage.
+Introduce a broken source change after one known-good accepted revision, then export/import the composition.
 
 Evidence:
 
-- Requirement and grant are distinct.
-- App code never receives provider credentials.
-- UI and agent use the same narrowed API.
-- Revocation produces a designed state.
+- Accepted Git head and Vibe last-good/running revision may differ safely.
+- Ordinary Run mode remains on last-good after failed validation.
+- Export contains readable source, semantic manifest, recipes/config schemas, dependency lock/provenance, and requirements.
+- Export excludes credentials, grants, private runtime state, protected observations, and Builder history.
+- Import into a fresh provider instance yields equivalent Resource/Tool behavior.
 
-Stop condition:
+### Stage 6: Coupling report
 
-- The Gadget or agent requires ambient account credentials.
+Classify every dependency as Vibe contract, documented Cloudflare API, internal API, or core patch.
 
-### Stage 6: Failure and last-good
-
-Actions:
-
-- Accept a valid revision and mark it last-good.
-- Ask the Builder for an intentionally invalid change.
-- Show diagnostics in preview.
-- Attempt acceptance.
-- Open the run route.
-- Repair or revert.
-
-Evidence:
-
-- The failed revision remains inspectable.
-- The run route continues to serve the previous last-good revision.
-- Recovery does not require manual database repair or deployment rollback.
-
-Stop condition:
-
-- A malformed draft can make the ordinary app unavailable or destroy the prior source.
-
-### Stage 7: Source and package round trip
-
-Actions:
-
-- Export the accepted app twice.
-- Compare normalized snapshots.
-- Inspect the manifest, composition root, exact lock, and included module sources.
-- Edit the greeting in an ordinary text editor.
-- Import into a fresh app.
-- Supply a fresh binding grant.
-- Run validation and export again.
-
-Evidence:
-
-- Source is readable and unminified.
-- Equivalent exports are deterministic.
-- The exported package is self-contained while retaining module identity and provenance.
-- The imported app behaves equivalently.
-- Private data, settings, grants, and chat do not cross.
-- The new app is independent of the original.
-
-Stop condition:
-
-- Meaningful source is trapped in opaque state or cannot be reconstructed deterministically.
-
-### Stage 8: Coupling report
-
-Actions:
-
-- List every Vibe-owned package.
-- List every upstream core patch.
-- Classify each dependency as public API, documented extension, internal API, or patch.
-- Estimate the effect of updating upstream by one representative revision.
-- Record any feature that could not be expressed through Vibe contracts.
-
-Evidence:
-
-- A coupling map another engineer can audit.
-- A clear recommendation: go, conditional go, or no-go.
+The experiment ends with **go**, **conditional go**, or **no-go** based on semantic leakage and patch burden, not on whether Cloudflare OS can store source in Git - that was answered at the reviewed upstream pin. Go establishes candidate viability, not provider selection.
 
 ## Acceptance Matrix
 
 | Capability | Test | Pass evidence | Decision impact |
 | --- | --- | --- | --- |
+| Semantic composition | Edit a Task in List Tool, then open it in Kanban Tool | Same Resource ID and authoritative state; no copied task store | Required |
+| Malleability ladder | Try, Undo, and Keep a setting and a supported Composition/Recipe change | Reversible, inspectable changes; source unchanged until source is needed | Required |
 | Persistent app | Accept Hello World, reopen without model | Render and request trace | Required |
 | Immediate preview | Change source from chat | Preview updates within the active build session | Required |
-| Runtime seam | Inspect generated app imports | Only Vibe public APIs | Required |
-| Shared API | Invoke actor from UI and agent | Same schema and authorization path | Required |
+| Runtime seam | Inspect generated app imports and semantic descriptors | Only Vibe public APIs; stable identities independent of workpieces | Required |
+| Shared API | Invoke actor/capability from UI and agent | Same schema and authorization path | Required |
+| Provider placement | Move a capability-owning implementation across a boundary | Resource/Tool contracts unchanged; authority still enforced | Required |
+| Second adapter | Run the Resource/Tool and capability slice with a minimal local/in-memory adapter | Equivalent core contracts with no Cloudflare-specific types | Required |
+| Authoring integrity | Interrupt an agent step before its durable boundary | No unexplained partial accepted change or orphan provenance | Required |
 | Module composition | Resolve one code module, actor module, and preset | Exact lock, separate actor state, self-contained Gadget build | Required |
 | Configuration | Change greeting with Builder disconnected | Persistent update, no model request | Required |
 | Last-good | Introduce invalid revision | Run route stays healthy | Required |
@@ -996,7 +951,7 @@ Evidence:
 
 ### Go
 
-Choose Cloudflare OS for hosted v0 when all required acceptance rows pass and:
+Classify Cloudflare OS as eligible for a hosted-v0 provider decision only when all required acceptance rows pass and:
 
 - The app runs without a model or active build session.
 - Cloudflare-specific code is contained in adapters and deployment code.
@@ -1030,9 +985,11 @@ Do not build hosted v0 on Cloudflare OS if any of these remain true after the bo
 - The runtime cannot enforce Vibe's binding and actor boundaries.
 - Required production behavior depends on unsupported or private infrastructure.
 
-## Plan After a Go Decision
+## Conditional Plan After Go and Explicit Provider Selection
 
 ### Phase 1: Hosted Vibe prototype
+
+The phases below apply **only if** a separate provider-selection decision approves Cloudflare OS after Go. A passing substrate experiment does not override the runtime-provider spec's requirement to test at least one real local and one real remote provider. The minimal local/in-memory adapter in this experiment checks interface portability, not full local runtime viability.
 
 - Productize the empty-app and Hello World paths.
 - Add app library, run, build, settings, source, and recovery views.
@@ -1071,31 +1028,31 @@ This phase is intentionally downstream. Cloudflare OS can accelerate product val
 
 ## Impact on the Foundation Spec
 
-If the experiment passes, propose a focused revision to the [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md):
+The [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md) already defines the provider-neutral Resource/Tool/Composition model and malleability ladder. The experiment tests one candidate placement of those semantics; it does not pre-approve Cloudflare OS as the canonical Vibe architecture.
 
-- Name Cloudflare OS as the hosted v0 substrate, not the universal architecture.
-- Add a substrate adapter boundary to the system architecture.
-- Separate live source authority by execution mode.
-- Clarify that Git is first-class in the local edition and explicit import/export history in hosted v0.
-- Add binding requirements, grants, per-collaborator authority, and observation provenance.
-- Map Vibe actors to API namespaces by default, not one process per actor.
-- Define the Builder as logically external even when hosted alongside the runtime.
-- Move SvelteKit self-contained apps, `just-bash`, browser Git, and IndexedDB implementation choices to the local-runner track.
-- Add Cloudflare OS draft preview as one implementation of the existing live-update contract.
-- Add the source and package round-trip tests from this proposal.
+If the experiment passes **and Cloudflare OS is explicitly selected**, propose a focused Cloudflare-specific foundation revision:
+
+- Name Cloudflare OS as the selected hosted-v0 provider, not the universal architecture.
+- Specify the Cloudflare adapter boundary and source/last-good mapping demonstrated in the spike.
+- Keep Git-compatible commit identity portable and live-edit synchronization provider-local.
+- Incorporate evidence on binding grants, per-collaborator authority, and observation provenance.
+- Define the Builder as logically external even when physically co-located.
+- Re-evaluate SvelteKit self-contained apps, `just-bash`, browser Git, and IndexedDB as local-runner implementation choices rather than mandatory hosted dependencies.
+- Record tested draft preview, source/package round trips, and adapter compatibility.
 
 Do not weaken these foundation commitments:
 
-- Apps run without invoking an LLM.
+- Apps run without invoking an LLM or Builder.
 - Chat remains available through a compatible Builder.
 - Users can edit source with ordinary tools.
+- Resource, Tool, and Composition identities remain independent of provider placement.
 - The Builder and runtime communicate through explicit contracts.
-- Configuration is usable without code or a model.
-- App modules have declared APIs and authority.
+- Direct configuration and supported semantic changes remain usable without a model.
+- Modules have declared APIs and authority.
 - Broken edits do not replace last-good behavior.
 - Credentials and private data are not distributed with apps.
 
-If the experiment fails, no foundation change is required. The lessons document still informs the independent architecture.
+If the experiment fails, the provider-neutral semantic foundation still stands; no Cloudflare-specific foundation revision is required.
 
 ## Risks and Mitigations
 
@@ -1113,15 +1070,15 @@ If the experiment fails, no foundation change is required. The lessons document 
 
 ### Cloud dependency
 
-**Risk:** Hosted v0 is not local-first and may inherit service limits or operational costs.
+**Risk:** Selecting Cloudflare-hosted v0 would not be local-first and could inherit service limits or operational costs.
 
 **Mitigation:** Describe it honestly as the hosted edition; preserve portable contracts and fund the local adapter only after product validation.
 
 ### Dual source authority
 
-**Risk:** Yjs/Gadget state and Git disagree.
+**Risk:** A provider's transient OT/proposal state and Vibe's portable Git revision identity are both treated as authoritative.
 
-**Mitigation:** One authority per mode, explicit import/export, immutable revision identifiers, no silent two-way sync.
+**Mitigation:** Git-compatible commits define portable source identity; provider-local edit state remains provisional until an explicit acceptance/promotion boundary.
 
 ### False portability
 
@@ -1183,17 +1140,19 @@ Questions deliberately deferred:
 
 The experiment is complete when a reviewer can:
 
-1. create an empty Vibe app;
-2. use chat to add Hello World;
-3. see the draft immediately;
-4. accept it and reopen the app without a model;
-5. alter the greeting through settings with the Builder disconnected;
-6. call one actor through both UI and agent;
-7. grant and revoke one narrow capability;
-8. survive one broken edit through last-good;
-9. export, manually edit, and import readable source;
-10. inspect a package and confirm it contains no private authority or data; and
-11. read a complete adapter and patch inventory.
+1. create a Vibe composition within a Cloudflare workspace;
+2. edit one Task Resource through List and Kanban Tools without copying its identity or state;
+3. Try, Undo, and Keep a typed setting and a reversible Recipe/Composition change without rewriting source;
+4. use chat to propose a Hello World or Tool-level source edit and see a live preview;
+5. accept the edit as a stable Git revision with attributable step provenance;
+6. reopen the accepted composition without a model or Builder session;
+7. inspect the semantic descriptors without relying on Gadget/workpiece IDs;
+8. call one typed capability through UI and Builder, grant and revoke its narrow authority;
+9. change the capability implementation's placement without changing Vibe contracts;
+10. exercise the same basic Resource/Tool and capability contracts with a minimal local/in-memory adapter;
+11. survive a broken edit through last-good and an interrupted authoring step without partial accepted changes;
+12. export, manually edit, and import readable source while excluding private state and credentials; and
+13. inspect a complete adapter, chosen upstream pin, and patch inventory.
 
 The decision report must state go, conditional go, or no-go and link each conclusion to that evidence.
 

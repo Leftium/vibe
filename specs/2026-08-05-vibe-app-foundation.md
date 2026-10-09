@@ -1,18 +1,19 @@
 # Vibe App Foundation
 
 **Date:** 2026-08-05  
+**Updated:** 2026-10-09  
 **Status:** Draft - implementation has not started  
 **Owner:** TBD
 
 ## One Sentence
 
-Create source-bearing applications whose integrated chat client connects to an optional shared Builder, allowing configuration, modular actor changes, and versioned source edits to appear live while the last-good app continues to run without an LLM or Builder.
+Create a malleable computing environment where users reshape durable Resources through Tools and Compositions - from temporary tweaks and typed configuration through reusable Recipes, modules, and source edits - while accepted behavior remains inspectable, versioned, and runnable without an LLM or Builder.
 
 ## First-Screen Contract
 
-This specification defines the product and implementation foundation for an application that users can change by chatting with it.
+This specification defines the product and implementation foundation for software users can reshape at the point of use. Chat is the easiest high-bandwidth entry point, not the only modification path: direct manipulation, typed settings, recipes, tool composition, module substitution, manual source editing, and Builder-driven source edits should converge on the same underlying model.
 
-The repository is currently empty. There is no existing application, package layout, build pipeline, or documentation convention.
+The repository contains design specifications but no application implementation, package layout, or build pipeline.
 
 The target is a stable app shell containing an integrated Builder chat client and a sandboxed app canvas. The chat client may connect to a shared, separately installed Builder. The Builder owns model credentials, agent execution, source editing, builds, and version control. The distributed app owns its normal runtime, readable source, configuration schemas, current artifact, and user data.
 
@@ -114,12 +115,12 @@ These contracts are requirements, not implementation suggestions.
 - A standard Git repository owns source history.
 - Generated runtime artifacts are outputs, not the canonical source.
 
-### Configuration Before Code
+### Semantic Changes Before Source
 
-- The Builder checks configuration and actor substitution before proposing a broad source patch.
-- Legitimate variation by user, device, provider, or environment should have a typed configuration point.
-- Configuration must remain understandable, validated, reversible, and attributable to a layer.
-- Configuration cannot bypass permissions or become an arbitrary command-execution surface.
+- Before proposing a broad source patch, the Builder and direct UI should consider existing settings, Recipes, Compositions, and compatible Tools or Modules using the [malleability ladder](#malleability-ladder).
+- Legitimate variation by user, device, provider, or environment should have a typed configuration point when that is the simplest safe representation.
+- Configuration and semantic changes must remain understandable, validated, reversible where supported, and attributable to an owner and provenance.
+- Configuration and composition cannot bypass permissions or become arbitrary command-execution surfaces.
 
 ### Reversible Change
 
@@ -142,14 +143,14 @@ This specification covers:
 
 - The stable app shell, integrated Builder Client, and app canvas
 - A shared and optional Builder
-- A fixed SvelteKit application stack for the first version
+- A fixed SvelteKit stack for the independent local walking skeleton (not a default-provider decision)
 - Readable source plus a self-contained last-good runtime artifact
 - Git-backed source history and manual editing
 - Candidate builds, health checks, atomic promotion, and rollback
 - Transport-neutral Builder messages
 - Agent, filesystem, command, Git, and build abstractions
 - Actor boundaries and supervision
-- Typed, layered configuration and config-first agent behavior
+- Typed, layered configuration and malleability-first change selection
 - Initial local persistence with IndexedDB
 - Authoring and runtime permission planes
 - A Project Notebook reference app
@@ -184,7 +185,7 @@ The status column distinguishes product decisions from provisional technology ch
 | Builder ownership | Resolved | Design coherence | Use one optional shared Builder for many apps. It owns credentials, agent execution, tools, and builds. |
 | Runtime dependency | Resolved | Design coherence | Accepted app behavior must run without an LLM or Builder. |
 | Source format | Resolved | Design coherence | Ship readable conventional source separately from generated artifacts. |
-| Initial framework | Resolved for v0 | Taste under constraints | Use one fixed SvelteKit stack to reduce the build and repair search space. |
+| Initial framework | Resolved for local walking skeleton | Taste under constraints | Use one fixed SvelteKit stack for the independent implementation track; a hosted provider experiment may use a different build shape behind Vibe contracts. |
 | Runtime artifact | Provisional | Evidence | Prefer one self-contained `app.html` artifact. A Phase 0 spike must confirm the supported SvelteKit build path and record a fallback. |
 | Source history | Resolved | User requirement | Use standard Git objects and refs so history is inspectable by ordinary tools. |
 | Promotion model | Resolved | Design coherence | Build candidates in isolation and atomically promote a pointer to the source revision and artifact. |
@@ -197,97 +198,170 @@ The status column distinguishes product decisions from provisional technology ch
 | Actor placement | Resolved default | Design coherence | Run actors in-process by default, then move them to Workers, frames, or processes when permissions, reliability, or load justify it. |
 | App data | Resolved for v0 | Design coherence | Use stable-origin local storage, with IndexedDB as the primary structured store. Keep it separate from Git. |
 | Permissions | Resolved | Design coherence | Separate authoring permissions from runtime permissions. Manifest requests are not local grants. |
-| User customization | Resolved | Design coherence | Prefer configuration, then actor composition, then source changes. A source change creates a local fork. |
+| User customization | Resolved | Design coherence | Use the malleability ladder: session tweak -> preference/preset -> typed config or Recipe -> Tool/Composition change -> compatible module -> app-owned integration/source -> vendored fork. Prefer the smallest local reversible change that satisfies intent. |
+
 
 ## System Architecture
 
-### Ownership Boundary
+### Semantic layer and ownership boundary
+
+Vibe separates what the user is working with from where the implementation happens to run.
 
 ```text
-Distributed app
+                          Vibe semantic layer
+
+      Resources <------> Tools <------> Tools
+          \                \           /
+           \             Compositions
+            \                |
+             +---- Recipes / Modules
+                     |
+                  Capabilities
+
+                         malleability ladder
+       temporary -> config -> compose -> extend -> source
+
+======================== provider boundary ========================
+
+Distributed / hosted / local runtime
 +----------------------------------------------------------------+
 | Stable shell                                                   |
 |                                                                |
-|  Builder Client ---------------- authenticated protocol ------+|----+
+| Builder Client ---------------- authenticated protocol ------+|----+
 |                                                               ||    |
-|  App canvas <---------------- candidate and active artifact ---+|    |
+| App/tool canvas <------------ candidate and active artifact ---+|    |
 |                                                                |    |
-|  Project identity, current pointer, config UI, permission UI    |    |
+| Project identity, semantic catalog, current pointer,            |    |
+| config UI, permission UI, provider placement metadata           |    |
 +----------------------------------------------------------------+    |
                                                                       |
-Readable source + Git                                                 |
+Readable source + Git-compatible revision identity                     |
 Content-addressed artifacts                                           |
 Local configuration overrides                                         |
-App data in an isolated storage partition                              |
+Resource/app data in isolated storage                                  |
                                                                       |
                                            Optional shared Builder <---+
                                            +--------------------------+
                                            | LLM credential store     |
                                            | Agent backends           |
-                                           | Project editor           |
+                                           | Semantic/source editor   |
                                            | Build and test tools     |
                                            | Task and audit log       |
                                            | Multiple open projects   |
                                            +--------------------------+
 ```
 
-The distributed app may bundle its thin shell or run inside a shared platform shell. Both forms use the same Builder protocol. The full Builder is never required in the distributable app package.
+The distributed app may bundle its thin shell or run inside a shared platform shell. A provider may place several semantic objects in one process/Gadget or split them across stronger boundaries. Resource, Tool, and Composition identity must not depend on that placement.
 
-### Components
+### Semantic primitives
 
-#### Stable Shell
+- **Resource** - durable user/domain data with stable identity and an authoritative state owner. A Task, Note, document, media item, or project remains the same Resource when different Tools view or transform it; Tools must not silently create competing copies.
+- **Tool** - a view, editor, transformer, analyzer, or interaction over Resources. A Tool should declare the Resource protocols and capabilities it consumes rather than own duplicate domain data by default.
+- **Composition** - an inspectable arrangement of Tools, Resources, layout, connections, and bindings.
+- **Recipe** - a versioned, inspectable declaration of supported configuration or composition operations, with validation and rollback semantics. Recipes are preferred over source forks when they can express the intent.
+- **Module** - a versioned reusable code dependency implementing Tools, Actors, capabilities, transforms, or shared behavior.
+- **Capability** - explicit authority to cross a trust, persistence, device, identity, or external-service boundary.
+- **Actor** - a state/lifecycle/API implementation unit. Actors remain useful below the semantic layer; a Tool may use one or several Actors.
+
+These primitives are deliberately not one-to-one with processes, frames, Workers, Gadgets, or repositories.
+
+### Malleability ladder
+
+The Builder and direct UI should prefer the smallest, cheapest, most local, reversible change that satisfies the user's intent:
+
+```text
+1. session-only tweak
+2. preference / high-level preset
+3. detailed typed configuration
+4. Recipe or Composition change
+5. swap/add a compatible Tool or Actor
+6. install/upgrade a compatible Module
+7. app-owned integration/source patch
+8. vendored package fork
+9. Builder/platform-core change
+```
+
+A lower rung is not always better. The rule is to avoid escalating to source when a supported semantic operation already expresses the intent.
+
+A temporary result may be promoted later. "Try", "Keep", "Undo", "Make reusable", and "Share" should be meaningful operations over configuration, recipes, compositions, and source - not only Git commits.
+
+A preview must not silently persist a configuration, source, or composition change. Undo reverses the appropriate customization layer, not unrelated user Resource data. External or irreversible effects require separate approval; changing a Recipe or view is not a promise to undo those effects.
+
+### Self-description and semantic selection
+
+Rendered UI should be able to describe enough of its semantic and implementation provenance for a human or Builder to target a change precisely.
+
+Conceptually, selecting a rendered region should make relationships like these discoverable:
+
+```text
+rendered region
+  -> Tool: TaskList
+  -> Resource selection: project:abc/tasks
+  -> Composition: project-home
+  -> effective Recipe/config
+  -> implementation Module/version
+  -> capability requirements
+  -> source owner / placement
+```
+
+This is not a mandate for one global schema. It is a requirement that Vibe preserve stable semantic identity and provenance so the Builder does not need to rediscover intent by scanning an entire repository for every small change.
+
+### Ownership Boundary
 
 The shell owns:
 
 - Builder discovery and connection state
-- The integrated chat surface
-- Project identity
-- The active and candidate canvas frames
-- The current artifact pointer
+- Integrated chat and direct malleability surfaces
+- Project/composition identity
+- Resource/Tool/Composition catalog presentation
+- Active and candidate canvas frames
+- Current and last-good artifact pointers
 - Runtime capability prompts and grants
-- Configuration UI generated from actor schemas
-- The runtime message bridge
+- Configuration and Recipe UI
+- Authenticated runtime message bridge
+- Provider placement metadata
 - Recovery when a candidate or Builder fails
-
-The shell does not own:
-
-- Model credentials
-- Prompt execution
-- Source reasoning
-- Dependency installation
-- The canonical project history
-
-#### Builder
 
 The Builder owns:
 
 - Provider adapters and BYOK credentials
 - Agent execution and clarification
-- Project filesystem access
+- Semantic catalog inspection
+- Project/source filesystem access
 - Source diffs
 - Build, check, and test commands
-- Git checkpoints
+- Git checkpoints/revisions
 - Candidate creation and delivery
 - Authoring permissions
-- Task progress, diagnostics, and audit events
+- Task progress, diagnostics, and audit/provenance events
 
-The Builder can expose a full editor UI, but the app needs only the protocol.
+The app/runtime owns:
 
-#### App Runtime
-
-The app runtime is generated code executing in an isolated canvas. It owns:
-
-- Application UI
-- Domain behavior
-- Actor instances that belong to the app
-- Access to its assigned data namespace
+- Domain behavior and Resource state
+- Tool implementations
+- Actor instances
+- Assigned data namespaces
 - Requests for granted platform capabilities
 
-It cannot directly access Builder credentials, Builder files, another app's data, or unrestricted native APIs.
+The project's standard Git history remains canonical; the Builder can create checkpoints but is not a competing source authority. The app/runtime cannot access Builder credentials, Builder files, ungranted Resource data, or unrestricted device APIs.
 
-#### Agent and Build Worker
+Agent and build workers receive isolated candidate views and approved tools, not direct write access to the active artifact or current pointer. A crash or timeout must leave last-good behavior available.
 
-The agent/build worker receives a candidate project view, approved tools, and explicit permissions. It does not receive the active runtime directory as a writable target. Crashing or timing out terminates the task without replacing the active artifact.
+The Builder can expose a full editor UI, but ordinary run and supported direct customization must not require the Builder.
+
+### Placement rule
+
+Run semantic objects together by default. Introduce a stronger boundary only when one of these requires it:
+
+- distinct authority,
+- independent state ownership,
+- independent lifecycle,
+- failure isolation,
+- scaling,
+- reuse across compositions,
+- or provider/runtime constraints.
+
+This preserves functional simplicity while allowing a provider such as Cloudflare OS to map selected components onto multiple workpieces.
 
 ### Initial Repository Shape
 
@@ -296,19 +370,67 @@ The platform repository should begin with a small number of boundaries:
 ```text
 vibe/
   apps/
-    shell/                 # SvelteKit shell, chat client, and canvas host
-    builder/               # Local Builder service and optional editor UI
+    shell/                 # shell, Builder client, and canvas host
+    builder/               # Builder service and optional editor UI
   packages/
-    contracts/             # Builder and actor message schemas
-    app-sdk/               # Runtime bridge, storage, actors, and config client
-    app-template/          # Empty source-bearing SvelteKit project
+    contracts/             # Builder, semantic, capability, and actor schemas
+    app-sdk/               # runtime bridge, storage, resources, tools, actors, config
+    app-template/          # empty source-bearing project
   examples/
-    project-notebook/      # Reference app, added incrementally
+    project-notebook/      # reference Resource/Tool composition
   specs/
     2026-08-05-vibe-app-foundation.md
 ```
 
-Do not create a package for every actor immediately. Extract another package only when it needs an independently enforced dependency boundary or release lifecycle.
+Do not create a package, process, or runtime workpiece for every Tool or Actor immediately. Extract a stronger boundary only when it needs independently enforced authority, lifecycle, failure isolation, reuse, or release management.
+
+## Malleability Model
+
+The core product question is not "Can the user ask AI to rewrite this app?" It is "Can useful software be reshaped at the point of use without turning every adjustment into a programming project?"
+
+### Tools, not data silos
+
+The reference Project Notebook should treat Projects, Tasks, and Notes as Resources that several Tools can present:
+
+```text
+Task Resource
+  +-- List Tool
+  +-- Kanban Tool
+  +-- Search Tool
+  +-- Calendar Tool
+  +-- Timeline Tool
+```
+
+"Show these tasks on a calendar" should first ask whether a compatible Calendar Tool can view the existing Task Resource. Generating new source is an escalation, not the default interpretation.
+
+### Chat is an accelerator, not the definition
+
+The same change should be possible through the lightest appropriate direct surface when practical:
+
+- toggle a preference,
+- edit typed configuration,
+- arrange a composition,
+- install or swap a Tool,
+- apply a Recipe,
+- upgrade a Module,
+- edit source manually,
+- or ask the Builder to do any of the above.
+
+The Builder is the easiest route into the full ladder because natural language can bridge between user intent and the appropriate mechanism. It must not become the only route.
+
+### Temporary before persistent
+
+Session-only experiments are first-class. A user may try a view, filter, layout, transform, or generated Tool without immediately making it part of the durable composition. If it proves useful, "Keep" promotes it into the smallest durable representation that preserves the behavior.
+
+### Accessible versioning
+
+Git remains the durable source-history mechanism, but user-facing reversibility spans more than source. Vibe should expose understandable operations such as Try, Keep, Undo, Make reusable, and Share while recording the underlying provenance needed to implement them safely.
+
+### Security follows composition
+
+Making Tools easy to create and combine must not create ambient authority. Capabilities remain explicit and narrow. A Tool can be highly malleable while still being unable to read a file, account, device, or external resource until the user grants the corresponding capability.
+
+Provider implementations may strengthen this with observation provenance and collaborator checks. The Vibe contract should leave room for provenance to become policy-bearing rather than treating it as audit text only.
 
 ## User Journeys
 
@@ -348,16 +470,16 @@ Clarification must not be simulated as an unstructured task failure.
 
 The app must not silently upload the prompt to an unrelated service.
 
-### Configuration-First Fix
+### Malleability-First Fix
 
 1. The user asks for a behavior change.
-2. The Builder queries the actor graph, configuration catalog, effective values, and provenance.
-3. If an existing safe setting can express the request, the Builder proposes a config patch.
-4. `ConfigActor` validates, dry-runs, applies, health-checks, and persists the change.
-5. The relevant actor reloads at the lightest required apply mode.
-6. No source fork is created.
+2. The Builder queries the Resource/Tool/Composition catalog, effective configuration and Recipes, module graph, capabilities, and provenance.
+3. It chooses the smallest reversible mechanism that can express the request: session tweak, preset, typed config, Recipe/Composition change, compatible Tool/Actor swap, Module change, or source patch.
+4. The selected mechanism validates and previews through its normal transaction path.
+5. The user keeps or rejects the result.
+6. A source fork is created only when supported semantic/customization mechanisms cannot express the behavior.
 
-If configuration cannot express the behavior, the Builder moves to actor substitution or a source patch and explains why.
+For example, "Show these tasks on a calendar" should reuse the Task Resource and a compatible Calendar Tool before generating a new task/calendar application.
 
 ### Manual Source Edit
 
@@ -472,6 +594,8 @@ The Builder writes a complete temporary pointer and atomically replaces `current
 ```
 
 The manifest schema is versioned. Unknown required fields make the app incompatible rather than being ignored.
+
+The Actor-only example is a walking-skeleton subset, not the complete semantic manifest. The manifest or versioned files it references must eventually expose stable Resource, Tool, and Composition identities, compatible protocols, Recipe references, Module/version locks, and capability requirements for discovery without scanning all source. Provider workpiece IDs belong to placement metadata, not portable semantic identity; the exact descriptor schema remains an implementation-spike decision.
 
 ### Portable Package
 
@@ -875,21 +999,11 @@ The manifest and messages give an agent a narrow entry point. The Builder should
 
 ## Configuration Architecture
 
-### No-Fork Escalation Ladder
+### Configuration within the malleability ladder
 
-Configuration is the least expensive form of self-modification:
+Configuration and presets are early rungs of the [canonical malleability ladder](#malleability-ladder), rather than a separate escalation policy. A compatible Tool or Composition change can meet an intent that no setting can express, without requiring source editing.
 
-```text
-preference
-  -> high-level preset
-    -> detailed typed configuration
-      -> compatible actor substitution
-        -> install an extension actor
-          -> patch app source
-            -> change Builder or platform core
-```
-
-The Builder starts at the top and moves downward only when the higher layer cannot express the requested behavior safely.
+The `ConfigActor` mechanisms below govern typed settings and config-only Recipes. Other supported semantic operations need equivalent validation, preview, persistence, and rollback at the boundary that owns them.
 
 ### Schema
 
@@ -986,9 +1100,9 @@ proposed patch
 
 The actor owns the meaning of its settings. `ConfigActor` owns layers, validation, provenance, migration, and transactional application.
 
-### Config-First Agent Behavior
+### Configuration review during malleability selection
 
-Before a broad source search, the Builder supplies the agent with:
+Before a broad source search, the Builder inspects the semantic catalog and supplies the agent with:
 
 - Actor graph
 - Actor manifests
@@ -1009,22 +1123,28 @@ The answer may correctly be "keep this internal." Configurability is a product A
 
 ### Recipes
 
-A recipe is a shareable, no-code configuration patch with:
+A Recipe is a versioned, shareable declaration of supported configuration operations and/or Resource/Tool/Composition bindings. A Recipe is not executable source, a general command script, or an authority grant.
 
-- Target actor and protocol range
-- Preconditions
-- Typed patch
-- Explanation
-- Capability changes
-- Validation or health check
-- No embedded secrets
+A Recipe records:
 
-Community recipes can later graduate into:
+- Target semantic identities and compatible actor, Tool, or Resource protocol ranges
+- Preconditions and required Module versions
+- Typed operations over documented configuration or composition interfaces
+- Explanation and provenance
+- Capability requirements and any proposed requests for grants, never embedded grants
+- Validation, preview, and safe rollback or inverse-operation semantics
+- No embedded secrets, ambient authority, or unapproved external side effects
+
+Config-only Recipes use the existing `ConfigActor` patch transaction. Composition Recipes use the owning composition transaction; applying either must not rewrite app source merely to express supported operations. A Recipe may be previewed in a session and then kept as a scoped durable customization.
+
+Undo restores the prior customization, not necessarily Resource content changed by normal app operations. Irreversible external effects require explicit approval and cannot be represented as automatically reversible.
+
+Community Recipes can later graduate into:
 
 - A documented preset
 - A new default
 - Automatic environment detection
-- An official actor improvement
+- An official Tool or Actor improvement
 - A platform fix
 
 This creates a low-friction public experiment space without making every edge case a permanent source fork.
@@ -1153,7 +1273,7 @@ LocalStorage may hold small preferences. IndexedDB is the initial structured dat
 
 ### Base App And Local Fork
 
-Configuration-only customization does not create a source fork.
+Supported configuration and composition Recipes do not create source forks unless they modify app-owned code. Replacing a compatible versioned Module can update a dependency lock without vending its source.
 
 When source changes, provenance records:
 
@@ -1279,6 +1399,8 @@ These require a native shell, runtime capabilities, background actors, and stron
 These require identity, synchronization, conflict semantics, hosting, and server capabilities. They are roadmap validation cases, not first-version requirements.
 
 ## Implementation Plan
+
+The phases below describe the independent local SvelteKit walking-skeleton track. They do not determine Vibe's default public runtime. The [Cloudflare OS substrate experiment](./2026-08-06-vibe-on-cloudflare-os.md) evaluates another provider behind the same contracts, while the [runtime-provider specification](./2026-08-06-vibe-runtime-providers.md) keeps final provider selection open.
 
 ### Phase 0: Feasibility Spikes
 
