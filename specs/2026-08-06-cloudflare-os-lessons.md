@@ -1,10 +1,10 @@
 # What Vibe Can Learn From Cloudflare OS
 
 **Date:** 2026-08-06  
-**Status:** Research note - reassessed against current main  
+**Status:** Research note - reassessed at a pinned September 2026 revision  
 **Cloudflare OS baseline revision reviewed:** `aedcda8b3066ff666f57ae28ecef7341d6c2dee7`  
 **Reassessed:** 2026-09-29  
-**Cloudflare OS current-main revision reviewed:** `687aab049cf084030a42093c10c4dde3d9c33fb4`  
+**Cloudflare OS September reference (main on 2026-09-28):** `687aab049cf084030a42093c10c4dde3d9c33fb4`  
 **Cloudflare OS starter revision reviewed:** `9c18a2e8b0c3741e5f4813546bbf24be5bbb98ee`  
 **Related:** [Vibe App Foundation](./2026-08-05-vibe-app-foundation.md), [Vibe on Cloudflare OS](./2026-08-06-vibe-on-cloudflare-os.md), [Vibe Reusable Modules and Upgrades](./2026-08-06-vibe-reusable-modules-and-upgrades.md)
 
@@ -16,9 +16,9 @@ Cloudflare OS has converged substantially toward Vibe's source and workspace arc
 
 ## First-Screen Contract
 
-This document is a source-backed analysis of Cloudflare OS as a reference architecture for Vibe. The original August 2026 research was pinned to `aedcda8`; the September reassessment compares that baseline with current `main` at `687aab049cf084030a42093c10c4dde3d9c33fb4`.
+This document is a source-backed analysis of Cloudflare OS as a reference architecture for Vibe. The original August 2026 research was pinned to `aedcda8`; the September reassessment compares that baseline with `main` as of 2026-09-28 at `687aab049cf084030a42093c10c4dde3d9c33fb4`. These findings are pinned historical observations, not a claim that this commit remains today's upstream head.
 
-The reassessment changes two earlier conclusions. Cloudflare OS is no longer fundamentally "one workspace = one Gadget", and its accepted source history is no longer Yjs-based. Current Cloudflare OS has:
+The reassessment changes two earlier conclusions. Cloudflare OS is no longer fundamentally "one workspace = one Gadget", and its accepted source history is no longer Yjs-based. At that September reference revision, Cloudflare OS has:
 
 - A workspace containing multiple **workpieces**, including executable Gadgets and Git-backed Worktrees.
 - Real Git objects and commits as accepted Gadget source history.
@@ -29,7 +29,7 @@ The reassessment changes two earlier conclusions. Cloudflare OS is no longer fun
 
 These changes remove two of the largest substrate mismatches identified in August. They do not remove Vibe's need for a provider-neutral product model. Cloudflare Workpieces are execution/authoring containers; they are not the semantic Resource/Tool/Composition layer suggested by Vibe's malleability goals.
 
-The target outcome remains a precise list of mechanisms Vibe should adopt, adapt, or keep behind an adapter. Current upstream behavior wins over the August baseline where the two conflict.
+The target outcome remains a precise list of mechanisms Vibe should adopt, adapt, or keep behind an adapter. Behavior observed at the pinned September revision supersedes the August baseline where they conflict. Before implementing the substrate experiment, recheck upstream for subsequent changes.
 
 ## Scope
 
@@ -100,7 +100,7 @@ This mapping is close enough to reuse architectural thinking, but not exact enou
 
 ## September 2026 Reassessment
 
-Between the August baseline and the current revision, Cloudflare OS moved materially toward a general agent workspace rather than a single generated-app container.
+Between the August baseline and the pinned September revision, Cloudflare OS moved materially toward a general agent workspace rather than a single generated-app container.
 
 ### Multi-workpiece workspaces
 

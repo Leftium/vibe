@@ -1,10 +1,9 @@
 # Vibe App Foundation
 
 **Date:** 2026-08-05  
-**Updated:** 2026-09-29  
+**Updated:** 2026-10-09  
 **Status:** Draft - implementation has not started  
 **Owner:** TBD
-
 
 ## One Sentence
 
@@ -14,7 +13,7 @@ Create a malleable computing environment where users reshape durable Resources t
 
 This specification defines the product and implementation foundation for software users can reshape at the point of use. Chat is the easiest high-bandwidth entry point, not the only modification path: direct manipulation, typed settings, recipes, tool composition, module substitution, manual source editing, and Builder-driven source edits should converge on the same underlying model.
 
-The repository is currently empty. There is no existing application, package layout, build pipeline, or documentation convention.
+The repository contains design specifications but no application implementation, package layout, or build pipeline.
 
 The target is a stable app shell containing an integrated Builder chat client and a sandboxed app canvas. The chat client may connect to a shared, separately installed Builder. The Builder owns model credentials, agent execution, source editing, builds, and version control. The distributed app owns its normal runtime, readable source, configuration schemas, current artifact, and user data.
 
@@ -116,12 +115,12 @@ These contracts are requirements, not implementation suggestions.
 - A standard Git repository owns source history.
 - Generated runtime artifacts are outputs, not the canonical source.
 
-### Configuration Before Code
+### Semantic Changes Before Source
 
-- The Builder checks configuration and actor substitution before proposing a broad source patch.
-- Legitimate variation by user, device, provider, or environment should have a typed configuration point.
-- Configuration must remain understandable, validated, reversible, and attributable to a layer.
-- Configuration cannot bypass permissions or become an arbitrary command-execution surface.
+- Before proposing a broad source patch, the Builder and direct UI should consider existing settings, Recipes, Compositions, and compatible Tools or Modules using the [malleability ladder](#malleability-ladder).
+- Legitimate variation by user, device, provider, or environment should have a typed configuration point when that is the simplest safe representation.
+- Configuration and semantic changes must remain understandable, validated, reversible where supported, and attributable to an owner and provenance.
+- Configuration and composition cannot bypass permissions or become arbitrary command-execution surfaces.
 
 ### Reversible Change
 
@@ -151,7 +150,7 @@ This specification covers:
 - Transport-neutral Builder messages
 - Agent, filesystem, command, Git, and build abstractions
 - Actor boundaries and supervision
-- Typed, layered configuration and config-first agent behavior
+- Typed, layered configuration and malleability-first change selection
 - Initial local persistence with IndexedDB
 - Authoring and runtime permission planes
 - A Project Notebook reference app
@@ -256,10 +255,10 @@ The distributed app may bundle its thin shell or run inside a shared platform sh
 
 ### Semantic primitives
 
-- **Resource** - durable user/domain data with stable identity. A Task, Note, document, media item, or project can remain the same Resource while different Tools view or transform it.
+- **Resource** - durable user/domain data with stable identity and an authoritative state owner. A Task, Note, document, media item, or project remains the same Resource when different Tools view or transform it; Tools must not silently create competing copies.
 - **Tool** - a view, editor, transformer, analyzer, or interaction over Resources. A Tool should declare the Resource protocols and capabilities it consumes rather than own duplicate domain data by default.
 - **Composition** - an inspectable arrangement of Tools, Resources, layout, connections, and bindings.
-- **Recipe** - a declarative, supported, reversible customization of configuration or composition. Recipes are preferred over source forks when they can express the intent.
+- **Recipe** - a versioned, inspectable declaration of supported configuration or composition operations, with validation and rollback semantics. Recipes are preferred over source forks when they can express the intent.
 - **Module** - a versioned reusable code dependency implementing Tools, Actors, capabilities, transforms, or shared behavior.
 - **Capability** - explicit authority to cross a trust, persistence, device, identity, or external-service boundary.
 - **Actor** - a state/lifecycle/API implementation unit. Actors remain useful below the semantic layer; a Tool may use one or several Actors.
@@ -285,6 +284,8 @@ The Builder and direct UI should prefer the smallest, cheapest, most local, reve
 A lower rung is not always better. The rule is to avoid escalating to source when a supported semantic operation already expresses the intent.
 
 A temporary result may be promoted later. "Try", "Keep", "Undo", "Make reusable", and "Share" should be meaningful operations over configuration, recipes, compositions, and source - not only Git commits.
+
+A preview must not silently persist a configuration, source, or composition change. Undo reverses the appropriate customization layer, not unrelated user Resource data. External or irreversible effects require separate approval; changing a Recipe or view is not a promise to undo those effects.
 
 ### Self-description and semantic selection
 
@@ -317,6 +318,7 @@ The shell owns:
 - Current and last-good artifact pointers
 - Runtime capability prompts and grants
 - Configuration and Recipe UI
+- Authenticated runtime message bridge
 - Provider placement metadata
 - Recovery when a candidate or Builder fails
 
@@ -341,7 +343,11 @@ The app/runtime owns:
 - Assigned data namespaces
 - Requests for granted platform capabilities
 
-The Builder can expose a full editor UI, but ordinary run and direct customization must not require the Builder.
+The project's standard Git history remains canonical; the Builder can create checkpoints but is not a competing source authority. The app/runtime cannot access Builder credentials, Builder files, ungranted Resource data, or unrestricted device APIs.
+
+Agent and build workers receive isolated candidate views and approved tools, not direct write access to the active artifact or current pointer. A crash or timeout must leave last-good behavior available.
+
+The Builder can expose a full editor UI, but ordinary run and supported direct customization must not require the Builder.
 
 ### Placement rule
 
@@ -588,6 +594,8 @@ The Builder writes a complete temporary pointer and atomically replaces `current
 ```
 
 The manifest schema is versioned. Unknown required fields make the app incompatible rather than being ignored.
+
+The Actor-only example is a walking-skeleton subset, not the complete semantic manifest. The manifest or versioned files it references must eventually expose stable Resource, Tool, and Composition identities, compatible protocols, Recipe references, Module/version locks, and capability requirements for discovery without scanning all source. Provider workpiece IDs belong to placement metadata, not portable semantic identity; the exact descriptor schema remains an implementation-spike decision.
 
 ### Portable Package
 
@@ -991,21 +999,11 @@ The manifest and messages give an agent a narrow entry point. The Builder should
 
 ## Configuration Architecture
 
-### No-Fork Escalation Ladder
+### Configuration within the malleability ladder
 
-Configuration is the least expensive form of self-modification:
+Configuration and presets are early rungs of the [canonical malleability ladder](#malleability-ladder), rather than a separate escalation policy. A compatible Tool or Composition change can meet an intent that no setting can express, without requiring source editing.
 
-```text
-preference
-  -> high-level preset
-    -> detailed typed configuration
-      -> compatible actor substitution
-        -> install an extension actor
-          -> patch app source
-            -> change Builder or platform core
-```
-
-The Builder starts at the top and moves downward only when the higher layer cannot express the requested behavior safely.
+The `ConfigActor` mechanisms below govern typed settings and config-only Recipes. Other supported semantic operations need equivalent validation, preview, persistence, and rollback at the boundary that owns them.
 
 ### Schema
 
@@ -1102,9 +1100,9 @@ proposed patch
 
 The actor owns the meaning of its settings. `ConfigActor` owns layers, validation, provenance, migration, and transactional application.
 
-### Config-First Agent Behavior
+### Configuration review during malleability selection
 
-Before a broad source search, the Builder supplies the agent with:
+Before a broad source search, the Builder inspects the semantic catalog and supplies the agent with:
 
 - Actor graph
 - Actor manifests
@@ -1125,22 +1123,28 @@ The answer may correctly be "keep this internal." Configurability is a product A
 
 ### Recipes
 
-A recipe is a shareable, no-code configuration patch with:
+A Recipe is a versioned, shareable declaration of supported configuration operations and/or Resource/Tool/Composition bindings. A Recipe is not executable source, a general command script, or an authority grant.
 
-- Target actor and protocol range
-- Preconditions
-- Typed patch
-- Explanation
-- Capability changes
-- Validation or health check
-- No embedded secrets
+A Recipe records:
 
-Community recipes can later graduate into:
+- Target semantic identities and compatible actor, Tool, or Resource protocol ranges
+- Preconditions and required Module versions
+- Typed operations over documented configuration or composition interfaces
+- Explanation and provenance
+- Capability requirements and any proposed requests for grants, never embedded grants
+- Validation, preview, and safe rollback or inverse-operation semantics
+- No embedded secrets, ambient authority, or unapproved external side effects
+
+Config-only Recipes use the existing `ConfigActor` patch transaction. Composition Recipes use the owning composition transaction; applying either must not rewrite app source merely to express supported operations. A Recipe may be previewed in a session and then kept as a scoped durable customization.
+
+Undo restores the prior customization, not necessarily Resource content changed by normal app operations. Irreversible external effects require explicit approval and cannot be represented as automatically reversible.
+
+Community Recipes can later graduate into:
 
 - A documented preset
 - A new default
 - Automatic environment detection
-- An official actor improvement
+- An official Tool or Actor improvement
 - A platform fix
 
 This creates a low-friction public experiment space without making every edge case a permanent source fork.
@@ -1269,7 +1273,7 @@ LocalStorage may hold small preferences. IndexedDB is the initial structured dat
 
 ### Base App And Local Fork
 
-Configuration-only customization does not create a source fork.
+Supported configuration and composition Recipes do not create source forks unless they modify app-owned code. Replacing a compatible versioned Module can update a dependency lock without vending its source.
 
 When source changes, provenance records:
 
